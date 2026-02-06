@@ -3,14 +3,14 @@ import {
   WebSocketServer,
   OnGatewayInit,
   OnGatewayConnection,
-  OnGatewayDisconnection,
+  OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import logger from '../config/logger';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class CustomersGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnection
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
   server: Server;
