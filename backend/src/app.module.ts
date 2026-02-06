@@ -5,12 +5,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { databaseConfig } from './config/database.config';
 import { RedisModule } from './redis/redis.module';
+import { CustomersModule } from './customers/customers.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot(databaseConfig),
     RedisModule,
+    CustomersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
