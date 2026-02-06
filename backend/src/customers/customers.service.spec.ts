@@ -176,4 +176,50 @@ describe('CustomersService', () => {
       expect(mockRedis.set).not.toHaveBeenCalled();
     });
   });
+
+  describe('findOne', () => {
+    it('should return cached customer on cache hit', async () => {
+      const serialized = JSON.stringify(mockCustomer);
+      mockRedis.get.mockResolvedValue(serialized);
+
+      const result = await service.findOne('uuid-1', false);
+
+      expect(result).toEqual(JSON.parse(serialized));
+      expect(mockRepository.findOneBy).not.toHaveBeenCalled();
+    });
+
+    it('should return customer from DB on cache miss and cache it', async () => {
+      mockRedis.get.mockResolvedValue(null);
+      mockRepository.findOneBy.mockResolvedValue(mockCustomer);
+
+      const result = await service.findOne('uuid-1', false);
+
+      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id: 'uuid-1' });
+      expect(result).toEqual(mockCustomer);
+      expect(mockRedis.set).toHaveBeenCalledWith(
+        'customers:detail:uuid-1:false',
+        JSON.stringify(mockCustomer),
+        'EX',
+        60,
+      );
+    });
+
+    it('should throw NotFoundException when customer not found', async () => {
+      mockRedis.get.mockResolvedValue(null);
+      mockRepository.findOneBy.mockResolvedValue(null);
+
+      await expect(service.findOne('uuid-999', false)).rejects.toThrow(
+        'Customer with id uuid-999 not found',
+      );
+    });
+
+    it('should fall back to database when Redis throws an error', async () => {
+      mockRedis.get.mockRejectedValue(new Error('Redis down'));
+      mockRepository.findOneBy.mockResolvedValue(mockCustomer);
+
+      const result = await service.findOne('uuid-1', false);
+
+      expect(result).toEqual(mockCustomer);
+    });
+  });
 });

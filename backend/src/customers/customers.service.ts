@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, Between, FindOptionsWhere } from 'typeorm';
 import Redis from 'ioredis';
@@ -85,5 +85,37 @@ export class CustomersService {
     }
 
     return result;
+  }
+
+  async findOne(id: string, isInternal: boolean) {
+    const cacheKey = `customers:detail:${id}:${isInternal}`;
+
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) {
+        logger.debug(`[CustomersService] Cache hit for customer ${id}`);
+        return JSON.parse(cached) as unknown;
+      }
+      logger.debug(`[CustomersService] Cache miss for customer ${id}`);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.warn(
+        `[CustomersService] Redis error in findOne, falling back to DB: ${error.message}`,
+      );
+    }
+
+    const customer = await this.repo.findOneBy({ id });
+    if (!customer) {
+      throw new NotFoundException(`Customer with id ${id} not found`);
+    }
+
+    try {
+      await this.redis.set(cacheKey, JSON.stringify(customer), 'EX', 60);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.warn(`[CustomersService] Redis set error: ${error.message}`);
+    }
+
+    return customer;
   }
 }
