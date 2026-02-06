@@ -1,12 +1,13 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, Between, FindOptionsWhere } from 'typeorm';
+import { Repository, ILike, Between, In, FindOptionsWhere } from 'typeorm';
 import Redis from 'ioredis';
 import { Customer } from './entities/customer.entity';
 import { CustomersGateway } from './customers.gateway';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
 import logger from '../config/logger';
 
 @Injectable()
@@ -141,5 +142,90 @@ export class CustomersService {
     });
 
     return saved;
+  }
+
+  async update(id: string, dto: UpdateCustomerDto) {
+    const customer = await this.repo.findOneBy({ id });
+    if (!customer) {
+      throw new NotFoundException(`Customer with id ${id} not found`);
+    }
+
+    Object.assign(customer, dto);
+    const saved = await this.repo.save(customer);
+
+    logger.info(
+      `[CustomersService] Customer updated: ${saved.id} (${saved.email})`,
+    );
+
+    try {
+      await this.redis.incr('customers:list:version');
+      await this.redis.del(
+        `customers:detail:${id}:true`,
+        `customers:detail:${id}:false`,
+      );
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.warn(
+        `[CustomersService] Redis invalidation error: ${error.message}`,
+      );
+    }
+
+    this.gateway.emit('customer.updated', {
+      id: saved.id,
+      full_name: saved.full_name,
+      email: saved.email,
+    });
+
+    return saved;
+  }
+
+  async remove(id: string) {
+    const customer = await this.repo.findOneBy({ id });
+    if (!customer) {
+      throw new NotFoundException(`Customer with id ${id} not found`);
+    }
+
+    await this.repo.remove(customer);
+
+    logger.info(`[CustomersService] Customer deleted: ${id}`);
+
+    try {
+      await this.redis.incr('customers:list:version');
+      await this.redis.del(
+        `customers:detail:${id}:true`,
+        `customers:detail:${id}:false`,
+      );
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.warn(
+        `[CustomersService] Redis invalidation error: ${error.message}`,
+      );
+    }
+
+    this.gateway.emit('customer.deleted', { id });
+  }
+
+  async bulkDelete(ids: string[]) {
+    await this.repo.delete({ id: In(ids) });
+
+    logger.info(`[CustomersService] Bulk deleted ${ids.length} customers`);
+
+    try {
+      await this.redis.incr('customers:list:version');
+      if (ids.length > 0) {
+        const detailKeys = ids.flatMap((id) => [
+          `customers:detail:${id}:true`,
+          `customers:detail:${id}:false`,
+        ]);
+        await this.redis.del(...detailKeys);
+      }
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.warn(
+        `[CustomersService] Redis invalidation error: ${error.message}`,
+      );
+    }
+
+    this.gateway.emit('customers.bulk_deleted', { ids });
   }
 }

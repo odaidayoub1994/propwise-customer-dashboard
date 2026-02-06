@@ -282,4 +282,154 @@ describe('CustomersService', () => {
       expect(result).toEqual(savedCustomer);
     });
   });
+
+  describe('update', () => {
+    const existingCustomer = {
+      id: 'uuid-1',
+      full_name: 'John Smith',
+      email: 'john@example.com',
+      phone_number: '+962791234567',
+      national_id: null,
+      internal_notes: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    const updateDto = { full_name: 'John Updated' };
+
+    const updatedCustomer = { ...existingCustomer, ...updateDto };
+
+    it('should update and return customer', async () => {
+      mockRepository.findOneBy.mockResolvedValue({ ...existingCustomer });
+      mockRepository.save.mockResolvedValue(updatedCustomer);
+
+      const result = await service.update('uuid-1', updateDto);
+
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(result).toEqual(updatedCustomer);
+    });
+
+    it('should throw NotFoundException when customer not found', async () => {
+      mockRepository.findOneBy.mockResolvedValue(null);
+
+      await expect(service.update('uuid-999', updateDto)).rejects.toThrow(
+        'Customer with id uuid-999 not found',
+      );
+    });
+
+    it('should bump list cache version and delete detail caches', async () => {
+      mockRepository.findOneBy.mockResolvedValue({ ...existingCustomer });
+      mockRepository.save.mockResolvedValue(updatedCustomer);
+      mockRedis.incr.mockResolvedValue(1);
+      mockRedis.del.mockResolvedValue(2);
+
+      await service.update('uuid-1', updateDto);
+
+      expect(mockRedis.incr).toHaveBeenCalledWith('customers:list:version');
+      expect(mockRedis.del).toHaveBeenCalledWith(
+        'customers:detail:uuid-1:true',
+        'customers:detail:uuid-1:false',
+      );
+    });
+
+    it('should emit customer.updated socket event with minimal payload', async () => {
+      mockRepository.findOneBy.mockResolvedValue({ ...existingCustomer });
+      mockRepository.save.mockResolvedValue(updatedCustomer);
+      mockRedis.incr.mockResolvedValue(1);
+      mockRedis.del.mockResolvedValue(2);
+
+      await service.update('uuid-1', updateDto);
+
+      expect(mockGateway.emit).toHaveBeenCalledWith('customer.updated', {
+        id: 'uuid-1',
+        full_name: 'John Updated',
+        email: 'john@example.com',
+      });
+    });
+
+    it('should still return updated customer when Redis fails', async () => {
+      mockRepository.findOneBy.mockResolvedValue({ ...existingCustomer });
+      mockRepository.save.mockResolvedValue(updatedCustomer);
+      mockRedis.incr.mockRejectedValue(new Error('Redis down'));
+
+      const result = await service.update('uuid-1', updateDto);
+
+      expect(result).toEqual(updatedCustomer);
+    });
+  });
+
+  describe('remove', () => {
+    const existingCustomer = {
+      id: 'uuid-1',
+      full_name: 'John Smith',
+      email: 'john@example.com',
+      phone_number: '+962791234567',
+      national_id: null,
+      internal_notes: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    it('should delete customer and invalidate caches', async () => {
+      mockRepository.findOneBy.mockResolvedValue(existingCustomer);
+      mockRepository.remove.mockResolvedValue(existingCustomer);
+      mockRedis.incr.mockResolvedValue(1);
+      mockRedis.del.mockResolvedValue(2);
+
+      await service.remove('uuid-1');
+
+      expect(mockRepository.remove).toHaveBeenCalledWith(existingCustomer);
+      expect(mockRedis.incr).toHaveBeenCalledWith('customers:list:version');
+      expect(mockRedis.del).toHaveBeenCalledWith(
+        'customers:detail:uuid-1:true',
+        'customers:detail:uuid-1:false',
+      );
+      expect(mockGateway.emit).toHaveBeenCalledWith('customer.deleted', {
+        id: 'uuid-1',
+      });
+    });
+
+    it('should throw NotFoundException when customer not found', async () => {
+      mockRepository.findOneBy.mockResolvedValue(null);
+
+      await expect(service.remove('uuid-999')).rejects.toThrow(
+        'Customer with id uuid-999 not found',
+      );
+    });
+  });
+
+  describe('bulkDelete', () => {
+    it('should delete multiple customers and invalidate caches', async () => {
+      mockRepository.delete.mockResolvedValue({ affected: 2 });
+      mockRedis.incr.mockResolvedValue(1);
+      mockRedis.del.mockResolvedValue(4);
+
+      await service.bulkDelete(['uuid-1', 'uuid-2']);
+
+      expect(mockRepository.delete).toHaveBeenCalled();
+      expect(mockRedis.incr).toHaveBeenCalledWith('customers:list:version');
+      expect(mockRedis.del).toHaveBeenCalledWith(
+        'customers:detail:uuid-1:true',
+        'customers:detail:uuid-1:false',
+        'customers:detail:uuid-2:true',
+        'customers:detail:uuid-2:false',
+      );
+      expect(mockGateway.emit).toHaveBeenCalledWith('customers.bulk_deleted', {
+        ids: ['uuid-1', 'uuid-2'],
+      });
+    });
+
+    it('should handle empty ids array', async () => {
+      mockRepository.delete.mockResolvedValue({ affected: 0 });
+      mockRedis.incr.mockResolvedValue(1);
+
+      await service.bulkDelete([]);
+
+      expect(mockRepository.delete).toHaveBeenCalled();
+      expect(mockRedis.del).not.toHaveBeenCalled();
+      expect(mockGateway.emit).toHaveBeenCalledWith('customers.bulk_deleted', {
+        ids: [],
+      });
+    });
+  });
 });
