@@ -6,6 +6,7 @@ import { Customer } from './entities/customer.entity';
 import { CustomersGateway } from './customers.gateway';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { QueryCustomerDto } from './dto/query-customer.dto';
+import { CreateCustomerDto } from './dto/create-customer.dto';
 import logger from '../config/logger';
 
 @Injectable()
@@ -117,5 +118,28 @@ export class CustomersService {
     }
 
     return customer;
+  }
+
+  async create(dto: CreateCustomerDto) {
+    const saved = await this.repo.save(this.repo.create(dto));
+
+    logger.info(
+      `[CustomersService] Customer created: ${saved.id} (${saved.email})`,
+    );
+
+    try {
+      await this.redis.incr('customers:list:version');
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.warn(`[CustomersService] Redis incr error: ${error.message}`);
+    }
+
+    this.gateway.emit('customer.created', {
+      id: saved.id,
+      full_name: saved.full_name,
+      email: saved.email,
+    });
+
+    return saved;
   }
 }

@@ -222,4 +222,64 @@ describe('CustomersService', () => {
       expect(result).toEqual(mockCustomer);
     });
   });
+
+  describe('create', () => {
+    const createDto = {
+      full_name: 'John Smith',
+      email: 'john@example.com',
+      phone_number: '+962791234567',
+    };
+
+    const savedCustomer = {
+      id: 'uuid-new',
+      ...createDto,
+      national_id: null,
+      internal_notes: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    it('should create and return customer', async () => {
+      mockRepository.create.mockReturnValue(savedCustomer);
+      mockRepository.save.mockResolvedValue(savedCustomer);
+
+      const result = await service.create(createDto);
+
+      expect(mockRepository.create).toHaveBeenCalledWith(createDto);
+      expect(mockRepository.save).toHaveBeenCalledWith(savedCustomer);
+      expect(result).toEqual(savedCustomer);
+    });
+
+    it('should bump list cache version', async () => {
+      mockRepository.create.mockReturnValue(savedCustomer);
+      mockRepository.save.mockResolvedValue(savedCustomer);
+
+      await service.create(createDto);
+
+      expect(mockRedis.incr).toHaveBeenCalledWith('customers:list:version');
+    });
+
+    it('should emit customer.created socket event with minimal payload', async () => {
+      mockRepository.create.mockReturnValue(savedCustomer);
+      mockRepository.save.mockResolvedValue(savedCustomer);
+
+      await service.create(createDto);
+
+      expect(mockGateway.emit).toHaveBeenCalledWith('customer.created', {
+        id: 'uuid-new',
+        full_name: 'John Smith',
+        email: 'john@example.com',
+      });
+    });
+
+    it('should still return saved customer when Redis incr fails', async () => {
+      mockRepository.create.mockReturnValue(savedCustomer);
+      mockRepository.save.mockResolvedValue(savedCustomer);
+      mockRedis.incr.mockRejectedValue(new Error('Redis down'));
+
+      const result = await service.create(createDto);
+
+      expect(result).toEqual(savedCustomer);
+    });
+  });
 });
