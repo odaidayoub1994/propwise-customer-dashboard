@@ -9,14 +9,9 @@ import { Inject } from '@nestjs/common';
 import type { LoggerService } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Server, Socket } from 'socket.io';
-import {
-  CustomerEventPayload,
-  CustomerDeletedPayload,
-  CustomersBulkDeletedPayload,
-} from './types/socket-events';
 
 @WebSocketGateway({ cors: { origin: '*' } })
-export class CustomersGateway
+export class SocketGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   constructor(
@@ -27,26 +22,20 @@ export class CustomersGateway
   @WebSocketServer()
   server: Server;
 
-  emit(
-    event: string,
-    payload:
-      | CustomerEventPayload
-      | CustomerDeletedPayload
-      | CustomersBulkDeletedPayload,
-  ) {
-    this.logger.debug?.(`[CustomersGateway] Emitting ${event}`);
+  emit(event: string, payload: unknown) {
+    this.logger.debug?.(`[SocketGateway] Emitting ${event}`);
     this.server.emit(event, payload);
   }
 
   afterInit() {
-    this.logger.log('[CustomersGateway] WebSocket gateway initialized');
+    this.logger.log('[SocketGateway] WebSocket gateway initialized');
   }
 
   handleConnection(client: Socket) {
-    this.logger.debug?.(`[CustomersGateway] Client connected: ${client.id}`);
+    this.logger.debug?.(`[SocketGateway] Client connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.debug?.(`[CustomersGateway] Client disconnected: ${client.id}`);
+    this.logger.debug?.(`[SocketGateway] Client disconnected: ${client.id}`);
   }
 }

@@ -16,7 +16,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { CustomersService } from './customers.service';
 import { Customer } from './entities/customer.entity';
-import { CustomersGateway } from './customers.gateway';
+import { SocketService } from '../socket/socket.service';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 
@@ -81,7 +81,7 @@ describe('CustomersService', () => {
         CustomersService,
         { provide: getRepositoryToken(Customer), useValue: mockRepository },
         { provide: REDIS_CLIENT, useValue: mockRedis },
-        { provide: CustomersGateway, useValue: mockGateway },
+        { provide: SocketService, useValue: mockGateway },
         { provide: WINSTON_MODULE_NEST_PROVIDER, useValue: mockLogger },
       ],
     }).compile();

@@ -13,7 +13,7 @@ import {
 import Redis from 'ioredis';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Customer } from './entities/customer.entity';
-import { CustomersGateway } from './customers.gateway';
+import { SocketService } from '../socket/socket.service';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -29,7 +29,7 @@ export class CustomersService {
     private readonly repo: Repository<Customer>,
     @Inject(REDIS_CLIENT)
     private readonly redis: Redis,
-    private readonly gateway: CustomersGateway,
+    private readonly socketService: SocketService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}
@@ -199,7 +199,10 @@ export class CustomersService {
 
     await this.invalidateCaches();
 
-    this.gateway.emit('customer.created', this.buildCustomerPayload(saved));
+    this.socketService.emit(
+      'customer.created',
+      this.buildCustomerPayload(saved),
+    );
 
     return saved;
   }
@@ -224,7 +227,10 @@ export class CustomersService {
 
     await this.invalidateCaches([id]);
 
-    this.gateway.emit('customer.updated', this.buildCustomerPayload(saved));
+    this.socketService.emit(
+      'customer.updated',
+      this.buildCustomerPayload(saved),
+    );
 
     return saved;
   }
@@ -241,7 +247,7 @@ export class CustomersService {
 
     await this.invalidateCaches([id]);
 
-    this.gateway.emit('customer.deleted', { id });
+    this.socketService.emit('customer.deleted', { id });
 
     return { id };
   }
@@ -253,7 +259,7 @@ export class CustomersService {
 
     await this.invalidateCaches(ids.length > 0 ? ids : undefined);
 
-    this.gateway.emit('customers.bulk_deleted', { ids });
+    this.socketService.emit('customers.bulk_deleted', { ids });
 
     return { ids };
   }
