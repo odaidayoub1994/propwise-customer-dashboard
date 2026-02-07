@@ -1,20 +1,23 @@
 import 'dotenv/config';
 
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { LoggerService, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { PORT, CORS_ORIGIN } from './config/env.config';
-import logger from './config/logger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  const logger = app.get<LoggerService>(WINSTON_MODULE_NEST_PROVIDER);
+  app.useLogger(logger);
+
   app.enableCors({ origin: CORS_ORIGIN });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalFilters(new AllExceptionsFilter(logger));
 
   const config = new DocumentBuilder()
     .setTitle('Propwise Customer API')
@@ -33,7 +36,7 @@ async function bootstrap() {
 
   await app.listen(PORT);
 
-  logger.info(`[Bootstrap] Application listening on port ${PORT}`);
-  logger.info('[Bootstrap] Swagger docs available at /api/docs');
+  logger.log(`[Bootstrap] Application listening on port ${PORT}`);
+  logger.log('[Bootstrap] Swagger docs available at /api/docs');
 }
 void bootstrap();

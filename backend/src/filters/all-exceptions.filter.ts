@@ -3,13 +3,15 @@ import {
   ExceptionFilter,
   ArgumentsHost,
   HttpException,
+  LoggerService,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
-import logger from '../config/logger';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
+  constructor(private readonly logger: LoggerService) {}
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<Request>();
@@ -25,7 +27,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           : (exceptionResponse as Record<string, unknown>).message ||
             exception.message;
 
-      logger.warn(
+      this.logger.warn(
         `[AllExceptionsFilter] HTTP ${status}: ${JSON.stringify(message)} — ${request.method} ${path}`,
       );
 
@@ -43,13 +45,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const driverError = exception.driverError as Record<string, unknown>;
 
       if (driverError?.code === '23505') {
-        logger.error(
+        const detail = (driverError.detail as string) || '';
+        const match = detail.match(/Key \((\w+)\)/);
+        const field = match ? match[1] : 'field';
+
+        this.logger.error(
           `[AllExceptionsFilter] DB constraint violation: ${exception.message}`,
         );
 
         response.status(409).json({
           statusCode: 409,
-          message: 'Email already exists',
+          message: `Duplicate value for ${field}`,
           error: 'Conflict',
           timestamp: new Date().toISOString(),
           path,
@@ -61,7 +67,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const error =
       exception instanceof Error ? exception : new Error(String(exception));
 
-    logger.error(
+    this.logger.error(
       `[AllExceptionsFilter] Unhandled error: ${error.message} — ${request.method} ${path}`,
     );
 

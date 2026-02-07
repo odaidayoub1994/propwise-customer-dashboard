@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsDateString,
   IsIn,
@@ -43,6 +43,9 @@ export class QueryCustomerDto {
   sort_by: string = 'created_at';
 
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.toUpperCase() : value,
+  )
   @IsIn(['ASC', 'DESC'])
   @ApiPropertyOptional({
     description: 'Sort direction',

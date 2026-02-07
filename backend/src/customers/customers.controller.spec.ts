@@ -10,6 +10,7 @@ jest.mock('../config/env.config', () => ({
   CORS_ORIGIN: '*',
 }));
 
+import { LoggerService } from '@nestjs/common';
 import { CustomersController } from './customers.controller';
 import { CustomersService } from './customers.service';
 import { QueryCustomerDto } from './dto/query-customer.dto';
@@ -25,6 +26,13 @@ const mockService = {
   bulkDelete: jest.fn(),
 };
 
+const mockLogger: LoggerService = {
+  log: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+};
+
 describe('CustomersController', () => {
   let controller: CustomersController;
 
@@ -32,6 +40,7 @@ describe('CustomersController', () => {
     jest.clearAllMocks();
     controller = new CustomersController(
       mockService as unknown as CustomersService,
+      mockLogger,
     );
   });
 
@@ -148,7 +157,7 @@ describe('CustomersController', () => {
 
   describe('remove', () => {
     it('should delegate to service with correct id', async () => {
-      mockService.remove.mockResolvedValue({ message: 'deleted' });
+      mockService.remove.mockResolvedValue({ id: 'uuid-1' });
 
       await controller.remove('uuid-1');
 
@@ -158,7 +167,7 @@ describe('CustomersController', () => {
 
   describe('bulkDelete', () => {
     it('should delegate to service with correct ids', async () => {
-      mockService.bulkDelete.mockResolvedValue({ affected: 2 });
+      mockService.bulkDelete.mockResolvedValue({ ids: ['uuid-1', 'uuid-2'] });
 
       await controller.bulkDelete({ ids: ['uuid-1', 'uuid-2'] });
 

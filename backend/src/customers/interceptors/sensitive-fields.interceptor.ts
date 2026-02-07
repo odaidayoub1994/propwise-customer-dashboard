@@ -1,38 +1,36 @@
 import {
   CallHandler,
   ExecutionContext,
+  Inject,
   Injectable,
+  LoggerService,
   NestInterceptor,
 } from '@nestjs/common';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Request } from 'express';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import logger from '../../config/logger';
-
-const SENSITIVE_FIELDS = ['national_id', 'internal_notes'];
-
-function stripSensitive(obj: Record<string, unknown>): Record<string, unknown> {
-  const copy = { ...obj };
-  for (const field of SENSITIVE_FIELDS) {
-    delete copy[field];
-  }
-  return copy;
-}
+import { stripSensitive } from '../utils/strip-sensitive';
 
 @Injectable()
 export class SensitiveFieldsInterceptor implements NestInterceptor {
+  constructor(
+    @Inject(WINSTON_MODULE_NEST_PROVIDER)
+    private readonly logger: LoggerService,
+  ) {}
+
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<Request>();
     const isInternal = request.headers['x-internal'] === 'true';
 
     if (isInternal) {
-      logger.debug(
+      this.logger.debug(
         `[SensitiveFieldsInterceptor] Internal mode — passing all fields for ${request.path}`,
       );
       return next.handle();
     }
 
-    logger.debug(
+    this.logger.debug(
       `[SensitiveFieldsInterceptor] Stripping sensitive fields for ${request.path}`,
     );
 

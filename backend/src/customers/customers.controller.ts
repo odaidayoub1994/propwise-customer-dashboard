@@ -8,17 +8,19 @@ import {
   Param,
   Body,
   Headers,
+  Inject,
+  LoggerService,
   ParseUUIDPipe,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { CustomersService } from './customers.service';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { BulkDeleteDto } from './dto/bulk-delete.dto';
 import { SensitiveFieldsInterceptor } from './interceptors/sensitive-fields.interceptor';
-import logger from '../config/logger';
 
 @Controller('customers')
 @ApiTags('customers')
@@ -29,7 +31,11 @@ import logger from '../config/logger';
 })
 @UseInterceptors(SensitiveFieldsInterceptor)
 export class CustomersController {
-  constructor(private readonly service: CustomersService) {}
+  constructor(
+    private readonly service: CustomersService,
+    @Inject(WINSTON_MODULE_NEST_PROVIDER)
+    private readonly logger: LoggerService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -40,7 +46,7 @@ export class CustomersController {
     @Query() query: QueryCustomerDto,
     @Headers('x-internal') internal?: string,
   ) {
-    logger.info(
+    this.logger.log(
       `[CustomersController] GET /customers — query: ${JSON.stringify(query)}, internal: ${internal}`,
     );
     return this.service.findAll(query, internal === 'true');
@@ -54,7 +60,7 @@ export class CustomersController {
     @Param('id', ParseUUIDPipe) id: string,
     @Headers('x-internal') internal?: string,
   ) {
-    logger.info(
+    this.logger.log(
       `[CustomersController] GET /customers/${id}, internal: ${internal}`,
     );
     return this.service.findOne(id, internal === 'true');
@@ -68,7 +74,7 @@ export class CustomersController {
     @Body() dto: CreateCustomerDto,
     @Headers('x-internal') internal?: string,
   ) {
-    logger.info(
+    this.logger.log(
       `[CustomersController] POST /customers — internal: ${internal}`,
     );
     if (internal !== 'true') {
@@ -88,7 +94,7 @@ export class CustomersController {
     @Body() dto: UpdateCustomerDto,
     @Headers('x-internal') internal?: string,
   ) {
-    logger.info(
+    this.logger.log(
       `[CustomersController] PUT /customers/${id} — internal: ${internal}`,
     );
     if (internal !== 'true') {
@@ -103,7 +109,7 @@ export class CustomersController {
   @ApiResponse({ status: 200, description: 'Customer deleted' })
   @ApiResponse({ status: 404, description: 'Customer not found' })
   remove(@Param('id', ParseUUIDPipe) id: string) {
-    logger.info(`[CustomersController] DELETE /customers/${id}`);
+    this.logger.log(`[CustomersController] DELETE /customers/${id}`);
     return this.service.remove(id);
   }
 
@@ -111,7 +117,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'Bulk delete customers by IDs' })
   @ApiResponse({ status: 200, description: 'Customers deleted' })
   bulkDelete(@Body() dto: BulkDeleteDto) {
-    logger.info(
+    this.logger.log(
       `[CustomersController] DELETE /customers (bulk) — ${dto.ids.length} ids`,
     );
     return this.service.bulkDelete(dto.ids);

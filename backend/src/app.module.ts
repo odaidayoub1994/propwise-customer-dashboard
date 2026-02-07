@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { WinstonModule } from 'nest-winston';
+import { format, transports } from 'winston';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { databaseConfig } from './config/database.config';
@@ -10,6 +12,16 @@ import { CustomersModule } from './customers/customers.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    WinstonModule.forRoot({
+      level: process.env.LOG_LEVEL || 'info',
+      format: format.combine(
+        format.timestamp(),
+        format.printf(({ timestamp, level, message }) => {
+          return `${String(timestamp)} [${level}]: ${String(message)}`;
+        }),
+      ),
+      transports: [new transports.Console()],
+    }),
     TypeOrmModule.forRoot(databaseConfig),
     RedisModule,
     CustomersModule,

@@ -1,6 +1,13 @@
-import { ExecutionContext, CallHandler } from '@nestjs/common';
+import { ExecutionContext, CallHandler, LoggerService } from '@nestjs/common';
 import { of } from 'rxjs';
 import { SensitiveFieldsInterceptor } from './sensitive-fields.interceptor';
+
+const mockLogger: LoggerService = {
+  log: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+};
 
 function createMockContext(headers: Record<string, string>): ExecutionContext {
   return {
@@ -21,7 +28,8 @@ describe('SensitiveFieldsInterceptor', () => {
   let interceptor: SensitiveFieldsInterceptor;
 
   beforeEach(() => {
-    interceptor = new SensitiveFieldsInterceptor();
+    jest.clearAllMocks();
+    interceptor = new SensitiveFieldsInterceptor(mockLogger);
   });
 
   it('should strip sensitive fields from single object without x-internal', (done) => {
