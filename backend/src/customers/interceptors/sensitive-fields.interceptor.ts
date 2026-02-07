@@ -3,9 +3,9 @@ import {
   ExecutionContext,
   Inject,
   Injectable,
-  LoggerService,
   NestInterceptor,
 } from '@nestjs/common';
+import type { LoggerService } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Request } from 'express';
 import { Observable } from 'rxjs';
@@ -24,13 +24,13 @@ export class SensitiveFieldsInterceptor implements NestInterceptor {
     const isInternal = request.headers['x-internal'] === 'true';
 
     if (isInternal) {
-      this.logger.debug(
+      this.logger.debug?.(
         `[SensitiveFieldsInterceptor] Internal mode — passing all fields for ${request.path}`,
       );
       return next.handle();
     }
 
-    this.logger.debug(
+    this.logger.debug?.(
       `[SensitiveFieldsInterceptor] Stripping sensitive fields for ${request.path}`,
     );
 

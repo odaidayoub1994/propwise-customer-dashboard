@@ -9,10 +9,10 @@ import {
   Body,
   Headers,
   Inject,
-  LoggerService,
   ParseUUIDPipe,
   UseInterceptors,
 } from '@nestjs/common';
+import type { LoggerService } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { CustomersService } from './customers.service';

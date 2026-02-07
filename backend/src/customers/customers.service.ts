@@ -1,9 +1,5 @@
-import {
-  Injectable,
-  Inject,
-  NotFoundException,
-  LoggerService,
-} from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import type { LoggerService } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   Repository,
@@ -46,10 +42,12 @@ export class CustomersService {
 
       const cached = await this.redis.get(cacheKey);
       if (cached) {
-        this.logger.debug(`[CustomersService] Cache hit for key: ${cacheKey}`);
+        this.logger.debug?.(
+          `[CustomersService] Cache hit for key: ${cacheKey}`,
+        );
         return JSON.parse(cached) as unknown;
       }
-      this.logger.debug('[CustomersService] Cache miss, querying database');
+      this.logger.debug?.('[CustomersService] Cache miss, querying database');
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       this.logger.warn(
@@ -123,10 +121,10 @@ export class CustomersService {
     try {
       const cached = await this.redis.get(cacheKey);
       if (cached) {
-        this.logger.debug(`[CustomersService] Cache hit for customer ${id}`);
+        this.logger.debug?.(`[CustomersService] Cache hit for customer ${id}`);
         return JSON.parse(cached) as unknown;
       }
-      this.logger.debug(`[CustomersService] Cache miss for customer ${id}`);
+      this.logger.debug?.(`[CustomersService] Cache miss for customer ${id}`);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       this.logger.warn(

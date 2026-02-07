@@ -3,8 +3,8 @@ import {
   ExceptionFilter,
   ArgumentsHost,
   HttpException,
-  LoggerService,
 } from '@nestjs/common';
+import type { LoggerService } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
 

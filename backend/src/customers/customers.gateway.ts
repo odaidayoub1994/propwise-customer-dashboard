@@ -5,7 +5,8 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Inject, LoggerService } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
+import type { LoggerService } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Server, Socket } from 'socket.io';
 
@@ -22,7 +23,7 @@ export class CustomersGateway
   server: Server;
 
   emit(event: string, payload: unknown) {
-    this.logger.debug(`[CustomersGateway] Emitting ${event}`);
+    this.logger.debug?.(`[CustomersGateway] Emitting ${event}`);
     this.server.emit(event, payload);
   }
 
@@ -31,10 +32,10 @@ export class CustomersGateway
   }
 
   handleConnection(client: Socket) {
-    this.logger.debug(`[CustomersGateway] Client connected: ${client.id}`);
+    this.logger.debug?.(`[CustomersGateway] Client connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.debug(`[CustomersGateway] Client disconnected: ${client.id}`);
+    this.logger.debug?.(`[CustomersGateway] Client disconnected: ${client.id}`);
   }
 }
