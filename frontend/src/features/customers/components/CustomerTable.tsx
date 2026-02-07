@@ -55,7 +55,7 @@ export function CustomerTable() {
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
 
   // Data hooks
-  const { data, isLoading } = useCustomers({
+  const { data, isLoading, isError } = useCustomers({
     page,
     limit: 20,
     q: debouncedSearch || undefined,
@@ -266,6 +266,15 @@ export function CustomerTable() {
                   ))}
                 </TableRow>
               ))
+            ) : isError ? (
+              <TableRow>
+                <TableCell
+                  colSpan={isInternal ? 8 : 6}
+                  className="h-24 text-center text-destructive"
+                >
+                  Failed to load customers. Please try again later.
+                </TableCell>
+              </TableRow>
             ) : customers.length === 0 ? (
               <TableRow>
                 <TableCell
