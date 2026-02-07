@@ -2,10 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { WinstonModule } from 'nest-winston';
-import { format, transports } from 'winston';
+import { transports } from 'winston';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { databaseConfig } from './config/database.config';
+import { winstonFormat } from './config/logger';
 import { RedisModule } from './redis/redis.module';
 import { CustomersModule } from './customers/customers.module';
 
@@ -14,12 +15,7 @@ import { CustomersModule } from './customers/customers.module';
     ConfigModule.forRoot(),
     WinstonModule.forRoot({
       level: process.env.LOG_LEVEL || 'info',
-      format: format.combine(
-        format.timestamp(),
-        format.printf(({ timestamp, level, message }) => {
-          return `${String(timestamp)} [${level}]: ${String(message)}`;
-        }),
-      ),
+      format: winstonFormat,
       transports: [new transports.Console()],
     }),
     TypeOrmModule.forRoot(databaseConfig),

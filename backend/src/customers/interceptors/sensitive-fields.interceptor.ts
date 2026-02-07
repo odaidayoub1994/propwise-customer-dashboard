@@ -37,6 +37,7 @@ export class SensitiveFieldsInterceptor implements NestInterceptor {
       `[SensitiveFieldsInterceptor] Stripping sensitive fields for ${request.path}`,
     );
 
+    // Last line of defense — strip sensitive fields from HTTP responses for public requests
     return next.handle().pipe(
       map((data: unknown) => {
         if (!data || typeof data !== 'object') return data;

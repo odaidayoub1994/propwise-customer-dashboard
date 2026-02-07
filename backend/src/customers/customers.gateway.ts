@@ -9,6 +9,11 @@ import { Inject } from '@nestjs/common';
 import type { LoggerService } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Server, Socket } from 'socket.io';
+import {
+  CustomerEventPayload,
+  CustomerDeletedPayload,
+  CustomersBulkDeletedPayload,
+} from './types/socket-events';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class CustomersGateway
@@ -22,7 +27,13 @@ export class CustomersGateway
   @WebSocketServer()
   server: Server;
 
-  emit(event: string, payload: unknown) {
+  emit(
+    event: string,
+    payload:
+      | CustomerEventPayload
+      | CustomerDeletedPayload
+      | CustomersBulkDeletedPayload,
+  ) {
     this.logger.debug?.(`[CustomersGateway] Emitting ${event}`);
     this.server.emit(event, payload);
   }

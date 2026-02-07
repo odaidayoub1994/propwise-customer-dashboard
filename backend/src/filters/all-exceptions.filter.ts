@@ -69,6 +69,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     this.logger.error(
       `[AllExceptionsFilter] Unhandled error: ${error.message} — ${request.method} ${path}`,
+      error.stack,
     );
 
     response.status(500).json({

@@ -20,6 +20,7 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { stripSensitive } from './utils/strip-sensitive';
 import { CACHE_TTL } from '../config/env.config';
+import { CustomerEventPayload } from './types/socket-events';
 
 @Injectable()
 export class CustomersService {
@@ -32,6 +33,44 @@ export class CustomersService {
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}
+
+  private async cacheSet(key: string, data: unknown): Promise<void> {
+    try {
+      await this.redis.set(key, JSON.stringify(data), 'EX', CACHE_TTL);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      this.logger.warn(`[CustomersService] Redis set error: ${error.message}`);
+    }
+  }
+
+  private async invalidateCaches(detailIds?: string[]): Promise<void> {
+    try {
+      await this.redis.incr('customers:list:version');
+      if (detailIds?.length) {
+        const keys = detailIds.flatMap((id) => [
+          `customers:detail:${id}:true`,
+          `customers:detail:${id}:false`,
+        ]);
+        await this.redis.del(...keys);
+      }
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      this.logger.warn(
+        `[CustomersService] Redis invalidation error: ${error.message}`,
+      );
+    }
+  }
+
+  private buildCustomerPayload(customer: Customer): CustomerEventPayload {
+    return {
+      id: customer.id,
+      full_name: customer.full_name,
+      email: customer.email,
+      phone_number: customer.phone_number,
+      created_at: customer.created_at,
+      updated_at: customer.updated_at,
+    };
+  }
 
   async findAll(query: QueryCustomerDto, isInternal: boolean) {
     const { page, limit, q, sort_by, sort_order, date_from, date_to } = query;
@@ -97,7 +136,7 @@ export class CustomersService {
 
     this.logger.log(`[CustomersService] Found ${total} customers for query`);
 
-    // Sanitize for public cache, then cache and return
+    // Sanitize before caching — public Redis keys must never hold sensitive data
     const responseData = isInternal
       ? result
       : {
@@ -108,19 +147,7 @@ export class CustomersService {
         };
 
     if (cacheKey) {
-      try {
-        await this.redis.set(
-          cacheKey,
-          JSON.stringify(responseData),
-          'EX',
-          CACHE_TTL,
-        );
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error(String(err));
-        this.logger.warn(
-          `[CustomersService] Redis set error: ${error.message}`,
-        );
-      }
+      await this.cacheSet(cacheKey, responseData);
     }
 
     return responseData;
@@ -148,21 +175,12 @@ export class CustomersService {
       throw new NotFoundException(`Customer with id ${id} not found`);
     }
 
+    // Sanitize before caching — public Redis keys must never hold sensitive data
     const responseData = isInternal
       ? customer
       : stripSensitive(customer as unknown as Record<string, unknown>);
 
-    try {
-      await this.redis.set(
-        cacheKey,
-        JSON.stringify(responseData),
-        'EX',
-        CACHE_TTL,
-      );
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      this.logger.warn(`[CustomersService] Redis set error: ${error.message}`);
-    }
+    await this.cacheSet(cacheKey, responseData);
 
     return responseData;
   }
@@ -179,21 +197,9 @@ export class CustomersService {
       `[CustomersService] Customer created: ${saved.id} (${saved.email})`,
     );
 
-    try {
-      await this.redis.incr('customers:list:version');
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      this.logger.warn(`[CustomersService] Redis incr error: ${error.message}`);
-    }
+    await this.invalidateCaches();
 
-    this.gateway.emit('customer.created', {
-      id: saved.id,
-      full_name: saved.full_name,
-      email: saved.email,
-      phone_number: saved.phone_number,
-      created_at: saved.created_at,
-      updated_at: saved.updated_at,
-    });
+    this.gateway.emit('customer.created', this.buildCustomerPayload(saved));
 
     return saved;
   }
@@ -216,27 +222,9 @@ export class CustomersService {
       `[CustomersService] Customer updated: ${saved.id} (${saved.email})`,
     );
 
-    try {
-      await this.redis.incr('customers:list:version');
-      await this.redis.del(
-        `customers:detail:${id}:true`,
-        `customers:detail:${id}:false`,
-      );
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      this.logger.warn(
-        `[CustomersService] Redis invalidation error: ${error.message}`,
-      );
-    }
+    await this.invalidateCaches([id]);
 
-    this.gateway.emit('customer.updated', {
-      id: saved.id,
-      full_name: saved.full_name,
-      email: saved.email,
-      phone_number: saved.phone_number,
-      created_at: saved.created_at,
-      updated_at: saved.updated_at,
-    });
+    this.gateway.emit('customer.updated', this.buildCustomerPayload(saved));
 
     return saved;
   }
@@ -251,18 +239,7 @@ export class CustomersService {
 
     this.logger.log(`[CustomersService] Customer deleted: ${id}`);
 
-    try {
-      await this.redis.incr('customers:list:version');
-      await this.redis.del(
-        `customers:detail:${id}:true`,
-        `customers:detail:${id}:false`,
-      );
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      this.logger.warn(
-        `[CustomersService] Redis invalidation error: ${error.message}`,
-      );
-    }
+    await this.invalidateCaches([id]);
 
     this.gateway.emit('customer.deleted', { id });
 
@@ -274,21 +251,7 @@ export class CustomersService {
 
     this.logger.log(`[CustomersService] Bulk deleted ${ids.length} customers`);
 
-    try {
-      await this.redis.incr('customers:list:version');
-      if (ids.length > 0) {
-        const detailKeys = ids.flatMap((id) => [
-          `customers:detail:${id}:true`,
-          `customers:detail:${id}:false`,
-        ]);
-        await this.redis.del(...detailKeys);
-      }
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      this.logger.warn(
-        `[CustomersService] Redis invalidation error: ${error.message}`,
-      );
-    }
+    await this.invalidateCaches(ids.length > 0 ? ids : undefined);
 
     this.gateway.emit('customers.bulk_deleted', { ids });
 

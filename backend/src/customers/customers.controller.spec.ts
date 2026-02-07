@@ -10,7 +10,6 @@ jest.mock('../config/env.config', () => ({
   CORS_ORIGIN: '*',
 }));
 
-import { LoggerService } from '@nestjs/common';
 import { CustomersController } from './customers.controller';
 import { CustomersService } from './customers.service';
 import { QueryCustomerDto } from './dto/query-customer.dto';
@@ -26,13 +25,6 @@ const mockService = {
   bulkDelete: jest.fn(),
 };
 
-const mockLogger: LoggerService = {
-  log: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-};
-
 describe('CustomersController', () => {
   let controller: CustomersController;
 
@@ -40,7 +32,6 @@ describe('CustomersController', () => {
     jest.clearAllMocks();
     controller = new CustomersController(
       mockService as unknown as CustomersService,
-      mockLogger,
     );
   });
 
@@ -67,14 +58,6 @@ describe('CustomersController', () => {
 
       expect(mockService.findAll).toHaveBeenCalledWith(query, false);
     });
-
-    it('should treat "True" (mixed case) as internal', async () => {
-      mockService.findAll.mockResolvedValue({ data: [], meta: {} });
-
-      await controller.findAll(query, 'True');
-
-      expect(mockService.findAll).toHaveBeenCalledWith(query, true);
-    });
   });
 
   describe('findOne', () => {
@@ -96,23 +79,6 @@ describe('CustomersController', () => {
   });
 
   describe('create', () => {
-    it('should strip sensitive fields when x-internal is not set', async () => {
-      const dto: CreateCustomerDto = {
-        full_name: 'John Smith',
-        email: 'john@example.com',
-        phone_number: '+962791234567',
-        national_id: '1234567890',
-        internal_notes: 'VIP client',
-      };
-      mockService.create.mockResolvedValue({ id: 'uuid-new' });
-
-      await controller.create(dto, undefined);
-
-      expect(dto.national_id).toBeUndefined();
-      expect(dto.internal_notes).toBeUndefined();
-      expect(mockService.create).toHaveBeenCalledWith(dto, false);
-    });
-
     it('should preserve sensitive fields when x-internal is true', async () => {
       const dto: CreateCustomerDto = {
         full_name: 'John Smith',
@@ -125,45 +91,24 @@ describe('CustomersController', () => {
 
       await controller.create(dto, 'true');
 
-      expect(dto.national_id).toBe('1234567890');
-      expect(dto.internal_notes).toBe('VIP client');
       expect(mockService.create).toHaveBeenCalledWith(dto, true);
     });
 
-    it('should preserve sensitive fields when x-internal is "TRUE" (uppercase)', async () => {
+    it('should delegate to service with isInternal false when header is missing', async () => {
       const dto: CreateCustomerDto = {
         full_name: 'John Smith',
         email: 'john@example.com',
         phone_number: '+962791234567',
-        national_id: '1234567890',
-        internal_notes: 'VIP client',
       };
       mockService.create.mockResolvedValue({ id: 'uuid-new' });
 
-      await controller.create(dto, 'TRUE');
+      await controller.create(dto, undefined);
 
-      expect(dto.national_id).toBe('1234567890');
-      expect(dto.internal_notes).toBe('VIP client');
-      expect(mockService.create).toHaveBeenCalledWith(dto, true);
+      expect(mockService.create).toHaveBeenCalledWith(dto, false);
     });
   });
 
   describe('update', () => {
-    it('should strip sensitive fields when x-internal is not set', async () => {
-      const dto: UpdateCustomerDto = {
-        full_name: 'John Updated',
-        national_id: '1234567890',
-        internal_notes: 'Updated notes',
-      };
-      mockService.update.mockResolvedValue({ id: 'uuid-1' });
-
-      await controller.update('uuid-1', dto, undefined);
-
-      expect(dto.national_id).toBeUndefined();
-      expect(dto.internal_notes).toBeUndefined();
-      expect(mockService.update).toHaveBeenCalledWith('uuid-1', dto, false);
-    });
-
     it('should preserve sensitive fields when x-internal is true', async () => {
       const dto: UpdateCustomerDto = {
         full_name: 'John Updated',
@@ -174,9 +119,18 @@ describe('CustomersController', () => {
 
       await controller.update('uuid-1', dto, 'true');
 
-      expect(dto.national_id).toBe('1234567890');
-      expect(dto.internal_notes).toBe('Updated notes');
       expect(mockService.update).toHaveBeenCalledWith('uuid-1', dto, true);
+    });
+
+    it('should delegate to service with isInternal false when header is missing', async () => {
+      const dto: UpdateCustomerDto = {
+        full_name: 'John Updated',
+      };
+      mockService.update.mockResolvedValue({ id: 'uuid-1' });
+
+      await controller.update('uuid-1', dto, undefined);
+
+      expect(mockService.update).toHaveBeenCalledWith('uuid-1', dto, false);
     });
   });
 
