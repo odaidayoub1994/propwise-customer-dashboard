@@ -23,4 +23,7 @@ export const REDIS_PORT: number = parseInt(
 );
 
 // Cache
-export const CACHE_TTL: number = parseInt(parseFromEnvVar('CACHE_TTL', '60'));
+const parsedCacheTTL = parseInt(parseFromEnvVar('CACHE_TTL', '60'));
+export const CACHE_TTL: number = Number.isNaN(parsedCacheTTL)
+  ? 60
+  : parsedCacheTTL;

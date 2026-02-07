@@ -10,16 +10,14 @@ import {
   MoreThanOrEqual,
   LessThanOrEqual,
 } from 'typeorm';
-import Redis from 'ioredis';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Customer } from './entities/customer.entity';
 import { SocketService } from '../socket/socket.service';
-import { REDIS_CLIENT } from '../redis/redis.module';
+import { CacheService } from '../cache/cache.service';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { stripSensitive } from './utils/strip-sensitive';
-import { CACHE_TTL } from '../config/env.config';
 import { CustomerEventPayload } from './types/socket-events';
 
 @Injectable()
@@ -27,37 +25,20 @@ export class CustomersService {
   constructor(
     @InjectRepository(Customer)
     private readonly repo: Repository<Customer>,
-    @Inject(REDIS_CLIENT)
-    private readonly redis: Redis,
+    private readonly cache: CacheService,
     private readonly socketService: SocketService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
   ) {}
 
-  private async cacheSet(key: string, data: unknown): Promise<void> {
-    try {
-      await this.redis.set(key, JSON.stringify(data), 'EX', CACHE_TTL);
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      this.logger.warn(`[CustomersService] Redis set error: ${error.message}`);
-    }
-  }
-
   private async invalidateCaches(detailIds?: string[]): Promise<void> {
-    try {
-      await this.redis.incr('customers:list:version');
-      if (detailIds?.length) {
-        const keys = detailIds.flatMap((id) => [
-          `customers:detail:${id}:true`,
-          `customers:detail:${id}:false`,
-        ]);
-        await this.redis.del(...keys);
-      }
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      this.logger.warn(
-        `[CustomersService] Redis invalidation error: ${error.message}`,
-      );
+    await this.cache.increment('customers:list:version');
+    if (detailIds?.length) {
+      const keys = detailIds.flatMap((id) => [
+        `customers:detail:${id}:true`,
+        `customers:detail:${id}:false`,
+      ]);
+      await this.cache.deleteKeys(...keys);
     }
   }
 
@@ -72,30 +53,11 @@ export class CustomersService {
     };
   }
 
-  async findAll(query: QueryCustomerDto, isInternal: boolean) {
-    const { page, limit, q, sort_by, sort_order, date_from, date_to } = query;
+  private buildWhereClause(
+    query: QueryCustomerDto,
+  ): FindOptionsWhere<Customer>[] | undefined {
+    const { q, date_from, date_to } = query;
 
-    let cacheKey: string | null = null;
-    try {
-      const version = (await this.redis.get('customers:list:version')) ?? '0';
-      cacheKey = `customers:list:v=${version}:p=${page}:l=${limit}:q=${q || ''}:sb=${sort_by}:so=${sort_order}:df=${date_from || ''}:dt=${date_to || ''}:i=${isInternal}`;
-
-      const cached = await this.redis.get(cacheKey);
-      if (cached) {
-        this.logger.debug?.(
-          `[CustomersService] Cache hit for key: ${cacheKey}`,
-        );
-        return JSON.parse(cached) as unknown;
-      }
-      this.logger.debug?.('[CustomersService] Cache miss, querying database');
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      this.logger.warn(
-        `[CustomersService] Redis error in findAll, falling back to DB: ${error.message}`,
-      );
-    }
-
-    // Build date filter
     let dateFilter: FindOptionsWhere<Customer> = {};
     if (date_from && date_to) {
       const endDate = new Date(date_to);
@@ -117,8 +79,23 @@ export class CustomersService {
       where.push(dateFilter);
     }
 
+    return where.length > 0 ? where : undefined;
+  }
+
+  async findAll(query: QueryCustomerDto, isInternal: boolean) {
+    const { page, limit, q, sort_by, sort_order, date_from, date_to } = query;
+
+    const version = await this.cache.getVersion('customers:list:version');
+    const cacheKey = `customers:list:v=${version}:p=${page}:l=${limit}:q=${q || ''}:sb=${sort_by}:so=${sort_order}:df=${date_from || ''}:dt=${date_to || ''}:i=${isInternal}`;
+
+    const cached = await this.cache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    this.logger.debug?.('[CustomersService] Cache miss, querying database');
+
     const [data, total] = await this.repo.findAndCount({
-      where: where.length > 0 ? where : undefined,
+      where: this.buildWhereClause(query),
       order: { [sort_by]: sort_order },
       skip: (page - 1) * limit,
       take: limit,
@@ -136,7 +113,6 @@ export class CustomersService {
 
     this.logger.log(`[CustomersService] Found ${total} customers for query`);
 
-    // Sanitize before caching — public Redis keys must never hold sensitive data
     const responseData = isInternal
       ? result
       : {
@@ -146,9 +122,7 @@ export class CustomersService {
           ),
         };
 
-    if (cacheKey) {
-      await this.cacheSet(cacheKey, responseData);
-    }
+    await this.cache.set(cacheKey, responseData);
 
     return responseData;
   }
@@ -156,31 +130,22 @@ export class CustomersService {
   async findOne(id: string, isInternal: boolean) {
     const cacheKey = `customers:detail:${id}:${isInternal}`;
 
-    try {
-      const cached = await this.redis.get(cacheKey);
-      if (cached) {
-        this.logger.debug?.(`[CustomersService] Cache hit for customer ${id}`);
-        return JSON.parse(cached) as unknown;
-      }
-      this.logger.debug?.(`[CustomersService] Cache miss for customer ${id}`);
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      this.logger.warn(
-        `[CustomersService] Redis error in findOne, falling back to DB: ${error.message}`,
-      );
+    const cached = await this.cache.get(cacheKey);
+    if (cached) {
+      return cached;
     }
+    this.logger.debug?.(`[CustomersService] Cache miss for customer ${id}`);
 
     const customer = await this.repo.findOneBy({ id });
     if (!customer) {
       throw new NotFoundException(`Customer with id ${id} not found`);
     }
 
-    // Sanitize before caching — public Redis keys must never hold sensitive data
     const responseData = isInternal
       ? customer
       : stripSensitive(customer as unknown as Record<string, unknown>);
 
-    await this.cacheSet(cacheKey, responseData);
+    await this.cache.set(cacheKey, responseData);
 
     return responseData;
   }

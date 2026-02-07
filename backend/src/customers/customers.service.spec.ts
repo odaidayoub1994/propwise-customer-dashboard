@@ -17,7 +17,7 @@ import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { CustomersService } from './customers.service';
 import { Customer } from './entities/customer.entity';
 import { SocketService } from '../socket/socket.service';
-import { REDIS_CLIENT } from '../redis/redis.module';
+import { CacheService } from '../cache/cache.service';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 
 const mockRepository = {
@@ -30,11 +30,12 @@ const mockRepository = {
   delete: jest.fn(),
 };
 
-const mockRedis = {
+const mockCacheService = {
   get: jest.fn(),
   set: jest.fn(),
-  del: jest.fn(),
-  incr: jest.fn(),
+  getVersion: jest.fn(),
+  increment: jest.fn(),
+  deleteKeys: jest.fn(),
 };
 
 const mockGateway = {
@@ -80,7 +81,7 @@ describe('CustomersService', () => {
       providers: [
         CustomersService,
         { provide: getRepositoryToken(Customer), useValue: mockRepository },
-        { provide: REDIS_CLIENT, useValue: mockRedis },
+        { provide: CacheService, useValue: mockCacheService },
         { provide: SocketService, useValue: mockGateway },
         { provide: WINSTON_MODULE_NEST_PROVIDER, useValue: mockLogger },
       ],
@@ -99,19 +100,18 @@ describe('CustomersService', () => {
         data: [mockCustomer],
         meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
       };
-      const serialized = JSON.stringify(cachedResult);
-      mockRedis.get
-        .mockResolvedValueOnce('5')
-        .mockResolvedValueOnce(serialized);
+      mockCacheService.getVersion.mockResolvedValue('5');
+      mockCacheService.get.mockResolvedValue(cachedResult);
 
       const result = await service.findAll(defaultQuery, false);
 
-      expect(result).toEqual(JSON.parse(serialized));
+      expect(result).toEqual(cachedResult);
       expect(mockRepository.findAndCount).not.toHaveBeenCalled();
     });
 
     it('should query database on cache miss and cache the result', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.getVersion.mockResolvedValue('0');
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findAndCount.mockResolvedValue([[mockCustomer], 1]);
 
       const result = await service.findAll(defaultQuery, false);
@@ -126,16 +126,18 @@ describe('CustomersService', () => {
         data: [mockCustomer],
         meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
       });
-      expect(mockRedis.set).toHaveBeenCalledWith(
+      expect(mockCacheService.set).toHaveBeenCalledWith(
         expect.any(String),
-        expect.any(String),
-        'EX',
-        60,
+        expect.objectContaining({
+          data: expect.any(Array) as unknown[],
+          meta: expect.any(Object) as unknown,
+        }),
       );
     });
 
     it('should strip sensitive fields from cached data in public mode', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.getVersion.mockResolvedValue('0');
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findAndCount.mockResolvedValue([
         [mockCustomerWithSensitive],
         1,
@@ -147,17 +149,17 @@ describe('CustomersService', () => {
       expect(res.data[0]).not.toHaveProperty('national_id');
       expect(res.data[0]).not.toHaveProperty('internal_notes');
 
-      const setCalls = mockRedis.set.mock.calls as unknown[][];
-      const cachedJson = setCalls[0][1] as string;
-      const cached = JSON.parse(cachedJson) as {
+      const setCalls = mockCacheService.set.mock.calls as unknown[][];
+      const cachedData = setCalls[0][1] as {
         data: Record<string, unknown>[];
       };
-      expect(cached.data[0]).not.toHaveProperty('national_id');
-      expect(cached.data[0]).not.toHaveProperty('internal_notes');
+      expect(cachedData.data[0]).not.toHaveProperty('national_id');
+      expect(cachedData.data[0]).not.toHaveProperty('internal_notes');
     });
 
     it('should preserve sensitive fields in cached data in internal mode', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.getVersion.mockResolvedValue('0');
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findAndCount.mockResolvedValue([
         [mockCustomerWithSensitive],
         1,
@@ -171,7 +173,8 @@ describe('CustomersService', () => {
     });
 
     it('should apply search filter when q is provided', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.getVersion.mockResolvedValue('0');
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findAndCount.mockResolvedValue([[], 0]);
 
       await service.findAll({ ...defaultQuery, q: 'john' }, false);
@@ -185,7 +188,8 @@ describe('CustomersService', () => {
     });
 
     it('should apply correct pagination', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.getVersion.mockResolvedValue('0');
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findAndCount.mockResolvedValue([[], 0]);
 
       await service.findAll({ ...defaultQuery, page: 3, limit: 10 }, false);
@@ -199,7 +203,8 @@ describe('CustomersService', () => {
     });
 
     it('should apply correct sorting', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.getVersion.mockResolvedValue('0');
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findAndCount.mockResolvedValue([[], 0]);
 
       await service.findAll(
@@ -214,8 +219,9 @@ describe('CustomersService', () => {
       );
     });
 
-    it('should fall back to database when Redis throws an error', async () => {
-      mockRedis.get.mockRejectedValue(new Error('Redis connection refused'));
+    it('should fall back to database when cache returns null', async () => {
+      mockCacheService.getVersion.mockResolvedValue('0');
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findAndCount.mockResolvedValue([[mockCustomer], 1]);
 
       const result = await service.findAll(defaultQuery, false);
@@ -224,11 +230,11 @@ describe('CustomersService', () => {
         data: [mockCustomer],
         meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
       });
-      expect(mockRedis.set).not.toHaveBeenCalled();
     });
 
     it('should filter by date_from only (open-ended)', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.getVersion.mockResolvedValue('0');
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findAndCount.mockResolvedValue([[], 0]);
 
       await service.findAll(
@@ -244,7 +250,8 @@ describe('CustomersService', () => {
     });
 
     it('should filter by date_to only (open-ended)', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.getVersion.mockResolvedValue('0');
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findAndCount.mockResolvedValue([[], 0]);
 
       await service.findAll({ ...defaultQuery, date_to: '2026-12-31' }, false);
@@ -257,7 +264,8 @@ describe('CustomersService', () => {
     });
 
     it('should filter by both date_from and date_to', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.getVersion.mockResolvedValue('0');
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findAndCount.mockResolvedValue([[], 0]);
 
       await service.findAll(
@@ -275,33 +283,30 @@ describe('CustomersService', () => {
 
   describe('findOne', () => {
     it('should return cached customer on cache hit', async () => {
-      const serialized = JSON.stringify(mockCustomer);
-      mockRedis.get.mockResolvedValue(serialized);
+      mockCacheService.get.mockResolvedValue(mockCustomer);
 
       const result = await service.findOne('uuid-1', false);
 
-      expect(result).toEqual(JSON.parse(serialized));
+      expect(result).toEqual(mockCustomer);
       expect(mockRepository.findOneBy).not.toHaveBeenCalled();
     });
 
     it('should return customer from DB on cache miss and cache it', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findOneBy.mockResolvedValue(mockCustomer);
 
       const result = await service.findOne('uuid-1', false);
 
       expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id: 'uuid-1' });
       expect(result).toEqual(mockCustomer);
-      expect(mockRedis.set).toHaveBeenCalledWith(
+      expect(mockCacheService.set).toHaveBeenCalledWith(
         'customers:detail:uuid-1:false',
-        expect.any(String),
-        'EX',
-        60,
+        mockCustomer,
       );
     });
 
     it('should strip sensitive fields for public mode', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findOneBy.mockResolvedValue(mockCustomerWithSensitive);
 
       const result = await service.findOne('uuid-1', false);
@@ -309,15 +314,14 @@ describe('CustomersService', () => {
       expect(result).not.toHaveProperty('national_id');
       expect(result).not.toHaveProperty('internal_notes');
 
-      const setCalls = mockRedis.set.mock.calls as unknown[][];
-      const cachedJson = setCalls[0][1] as string;
-      const cached = JSON.parse(cachedJson) as Record<string, unknown>;
-      expect(cached).not.toHaveProperty('national_id');
-      expect(cached).not.toHaveProperty('internal_notes');
+      const setCalls = mockCacheService.set.mock.calls as unknown[][];
+      const cachedData = setCalls[0][1] as Record<string, unknown>;
+      expect(cachedData).not.toHaveProperty('national_id');
+      expect(cachedData).not.toHaveProperty('internal_notes');
     });
 
     it('should preserve sensitive fields for internal mode', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findOneBy.mockResolvedValue(mockCustomerWithSensitive);
 
       const result = await service.findOne('uuid-1', true);
@@ -328,7 +332,7 @@ describe('CustomersService', () => {
     });
 
     it('should throw NotFoundException when customer not found', async () => {
-      mockRedis.get.mockResolvedValue(null);
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findOneBy.mockResolvedValue(null);
 
       await expect(service.findOne('uuid-999', false)).rejects.toThrow(
@@ -336,8 +340,8 @@ describe('CustomersService', () => {
       );
     });
 
-    it('should fall back to database when Redis throws an error', async () => {
-      mockRedis.get.mockRejectedValue(new Error('Redis down'));
+    it('should fall back to database when cache returns null', async () => {
+      mockCacheService.get.mockResolvedValue(null);
       mockRepository.findOneBy.mockResolvedValue(mockCustomer);
 
       const result = await service.findOne('uuid-1', false);
@@ -379,7 +383,9 @@ describe('CustomersService', () => {
 
       await service.create(createDto, true);
 
-      expect(mockRedis.incr).toHaveBeenCalledWith('customers:list:version');
+      expect(mockCacheService.increment).toHaveBeenCalledWith(
+        'customers:list:version',
+      );
     });
 
     it('should emit customer.created socket event with enriched payload', async () => {
@@ -396,16 +402,6 @@ describe('CustomersService', () => {
         created_at: savedCustomer.created_at,
         updated_at: savedCustomer.updated_at,
       });
-    });
-
-    it('should still return saved customer when Redis incr fails', async () => {
-      mockRepository.create.mockReturnValue(savedCustomer);
-      mockRepository.save.mockResolvedValue(savedCustomer);
-      mockRedis.incr.mockRejectedValue(new Error('Redis down'));
-
-      const result = await service.create(createDto, true);
-
-      expect(result).toEqual(savedCustomer);
     });
 
     it('should strip sensitive fields when isInternal is false', async () => {
@@ -463,13 +459,13 @@ describe('CustomersService', () => {
     it('should bump list cache version and delete detail caches', async () => {
       mockRepository.findOneBy.mockResolvedValue({ ...existingCustomer });
       mockRepository.save.mockResolvedValue(updatedCustomer);
-      mockRedis.incr.mockResolvedValue(1);
-      mockRedis.del.mockResolvedValue(2);
 
       await service.update('uuid-1', updateDto, true);
 
-      expect(mockRedis.incr).toHaveBeenCalledWith('customers:list:version');
-      expect(mockRedis.del).toHaveBeenCalledWith(
+      expect(mockCacheService.increment).toHaveBeenCalledWith(
+        'customers:list:version',
+      );
+      expect(mockCacheService.deleteKeys).toHaveBeenCalledWith(
         'customers:detail:uuid-1:true',
         'customers:detail:uuid-1:false',
       );
@@ -478,8 +474,6 @@ describe('CustomersService', () => {
     it('should emit customer.updated socket event with enriched payload', async () => {
       mockRepository.findOneBy.mockResolvedValue({ ...existingCustomer });
       mockRepository.save.mockResolvedValue(updatedCustomer);
-      mockRedis.incr.mockResolvedValue(1);
-      mockRedis.del.mockResolvedValue(2);
 
       await service.update('uuid-1', updateDto, true);
 
@@ -491,16 +485,6 @@ describe('CustomersService', () => {
         created_at: updatedCustomer.created_at,
         updated_at: updatedCustomer.updated_at,
       });
-    });
-
-    it('should still return updated customer when Redis fails', async () => {
-      mockRepository.findOneBy.mockResolvedValue({ ...existingCustomer });
-      mockRepository.save.mockResolvedValue(updatedCustomer);
-      mockRedis.incr.mockRejectedValue(new Error('Redis down'));
-
-      const result = await service.update('uuid-1', updateDto, true);
-
-      expect(result).toEqual(updatedCustomer);
     });
 
     it('should strip sensitive fields when isInternal is false', async () => {
@@ -534,15 +518,15 @@ describe('CustomersService', () => {
     it('should delete customer, invalidate caches, and return { id }', async () => {
       mockRepository.findOneBy.mockResolvedValue(existingCustomer);
       mockRepository.remove.mockResolvedValue(existingCustomer);
-      mockRedis.incr.mockResolvedValue(1);
-      mockRedis.del.mockResolvedValue(2);
 
       const result = await service.remove('uuid-1');
 
       expect(result).toEqual({ id: 'uuid-1' });
       expect(mockRepository.remove).toHaveBeenCalledWith(existingCustomer);
-      expect(mockRedis.incr).toHaveBeenCalledWith('customers:list:version');
-      expect(mockRedis.del).toHaveBeenCalledWith(
+      expect(mockCacheService.increment).toHaveBeenCalledWith(
+        'customers:list:version',
+      );
+      expect(mockCacheService.deleteKeys).toHaveBeenCalledWith(
         'customers:detail:uuid-1:true',
         'customers:detail:uuid-1:false',
       );
@@ -563,15 +547,15 @@ describe('CustomersService', () => {
   describe('bulkDelete', () => {
     it('should delete multiple customers, invalidate caches, and return { ids }', async () => {
       mockRepository.delete.mockResolvedValue({ affected: 2 });
-      mockRedis.incr.mockResolvedValue(1);
-      mockRedis.del.mockResolvedValue(4);
 
       const result = await service.bulkDelete(['uuid-1', 'uuid-2']);
 
       expect(result).toEqual({ ids: ['uuid-1', 'uuid-2'] });
       expect(mockRepository.delete).toHaveBeenCalled();
-      expect(mockRedis.incr).toHaveBeenCalledWith('customers:list:version');
-      expect(mockRedis.del).toHaveBeenCalledWith(
+      expect(mockCacheService.increment).toHaveBeenCalledWith(
+        'customers:list:version',
+      );
+      expect(mockCacheService.deleteKeys).toHaveBeenCalledWith(
         'customers:detail:uuid-1:true',
         'customers:detail:uuid-1:false',
         'customers:detail:uuid-2:true',
@@ -584,13 +568,12 @@ describe('CustomersService', () => {
 
     it('should handle empty ids array and return { ids: [] }', async () => {
       mockRepository.delete.mockResolvedValue({ affected: 0 });
-      mockRedis.incr.mockResolvedValue(1);
 
       const result = await service.bulkDelete([]);
 
       expect(result).toEqual({ ids: [] });
       expect(mockRepository.delete).toHaveBeenCalled();
-      expect(mockRedis.del).not.toHaveBeenCalled();
+      expect(mockCacheService.deleteKeys).not.toHaveBeenCalled();
       expect(mockGateway.emit).toHaveBeenCalledWith('customers.bulk_deleted', {
         ids: [],
       });

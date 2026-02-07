@@ -8,6 +8,7 @@ import { AppService } from './app.service';
 import { databaseConfig } from './config/database.config';
 import { winstonFormat } from './config/logger';
 import { RedisModule } from './redis/redis.module';
+import { CacheModule } from './cache/cache.module';
 import { SocketModule } from './socket/socket.module';
 import { CustomersModule } from './customers/customers.module';
 
@@ -21,6 +22,7 @@ import { CustomersModule } from './customers/customers.module';
     }),
     TypeOrmModule.forRoot(databaseConfig),
     RedisModule,
+    CacheModule,
     SocketModule,
     CustomersModule,
   ],
