@@ -15,6 +15,7 @@ interface DeleteConfirmModalProps {
   onClose: () => void;
   onConfirm: () => void;
   count: number;
+  isPending?: boolean;
 }
 
 export function DeleteConfirmModal({
@@ -22,6 +23,7 @@ export function DeleteConfirmModal({
   onClose,
   onConfirm,
   count,
+  isPending = false,
 }: DeleteConfirmModalProps) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -35,11 +37,11 @@ export function DeleteConfirmModal({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={onConfirm}>
-            Delete
+          <Button variant="destructive" onClick={onConfirm} disabled={isPending}>
+            {isPending ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogFooter>
       </DialogContent>

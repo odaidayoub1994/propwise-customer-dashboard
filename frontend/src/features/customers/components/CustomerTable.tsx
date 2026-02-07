@@ -67,6 +67,8 @@ export function CustomerTable() {
 
   const customers = useMemo(() => data?.data ?? [], [data?.data]);
   const meta = data?.meta;
+  const isMutating =
+    deleteMutation.isPending || bulkDeleteMutation.isPending;
 
   // Selection helpers
   const allSelected =
@@ -188,7 +190,7 @@ export function CustomerTable() {
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex items-center gap-3">
           <AdminToggle />
-          <Button onClick={openCreateModal}>
+          <Button onClick={openCreateModal} disabled={isMutating}>
             <Plus className="mr-2 h-4 w-4" />
             Add Customer
           </Button>
@@ -350,6 +352,7 @@ export function CustomerTable() {
         onClose={closeDeleteModal}
         onConfirm={handleConfirmDelete}
         count={deletingIds.length}
+        isPending={isMutating}
       />
 
       {/* Socket event listener */}
