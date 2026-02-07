@@ -11,7 +11,7 @@ import {
   ParseUUIDPipe,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -22,11 +22,6 @@ import { isInternalRequest } from './utils/is-internal-request';
 
 @Controller('customers')
 @ApiTags('customers')
-@ApiHeader({
-  name: 'x-internal',
-  required: false,
-  description: 'Set to "true" for admin mode — reveals sensitive fields',
-})
 @UseInterceptors(SensitiveFieldsInterceptor)
 export class CustomersController {
   constructor(private readonly service: CustomersService) {}

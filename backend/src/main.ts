@@ -23,12 +23,6 @@ async function bootstrap() {
     .setTitle('Propwise Customer API')
     .setDescription('Customer Activity Dashboard API')
     .setVersion('1.0')
-    .addGlobalParameters({
-      name: 'x-internal',
-      in: 'header',
-      required: false,
-      description: 'Set to "true" for admin mode',
-    })
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
