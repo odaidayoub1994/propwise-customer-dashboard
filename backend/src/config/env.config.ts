@@ -6,7 +6,7 @@ export function parseFromEnvVar(name: string, defaultValue?: string): string {
 }
 
 // Server
-export const PORT: number = parseInt(parseFromEnvVar('PORT', '3000'));
+export const PORT: number = parseInt(parseFromEnvVar('PORT', '4000'));
 export const CORS_ORIGIN: string = parseFromEnvVar('CORS_ORIGIN', '*');
 
 // PostgreSQL

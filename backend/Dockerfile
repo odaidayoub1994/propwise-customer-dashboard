@@ -20,5 +20,5 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY package.json pnpm-lock.yaml ./
-EXPOSE 3000
+EXPOSE 4000
 CMD ["node", "dist/main.js"]

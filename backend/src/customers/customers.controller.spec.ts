@@ -6,7 +6,7 @@ jest.mock('../config/env.config', () => ({
   DB_USERNAME: 'test',
   DB_PASSWORD: 'test',
   DB_NAME: 'test',
-  PORT: 3000,
+  PORT: 4000,
   CORS_ORIGIN: '*',
 }));
 
