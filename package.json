@@ -1,0 +1,31 @@
+{
+  "name": "propwise-customer-dashboard",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Full-stack Customer Activity Dashboard — NestJS + Next.js",
+  "scripts": {
+    "dev": "concurrently -k -n infra,api,web -c blue,green,magenta \"docker compose up postgres redis\" \"pnpm -C backend run start:dev\" \"pnpm -C frontend run dev\"",
+    "dev:backend": "pnpm -C backend run start:dev",
+    "dev:frontend": "pnpm -C frontend run dev",
+    "infra": "docker compose up -d postgres redis",
+    "infra:down": "docker compose down",
+    "build": "pnpm -C backend run build && pnpm -C frontend run build",
+    "build:backend": "pnpm -C backend run build",
+    "build:frontend": "pnpm -C frontend run build",
+    "lint": "pnpm -C backend run lint && pnpm -C frontend run lint",
+    "lint:backend": "pnpm -C backend run lint",
+    "lint:frontend": "pnpm -C frontend run lint",
+    "format": "pnpm -C backend run format",
+    "test": "pnpm -C backend run test",
+    "test:watch": "pnpm -C backend run test:watch",
+    "test:cov": "pnpm -C backend run test:cov",
+    "seed": "pnpm -C backend run seed",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose up -d --build",
+    "install:all": "pnpm -C backend install && pnpm -C frontend install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

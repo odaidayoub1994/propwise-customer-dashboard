@@ -11,25 +11,32 @@ Full-stack Customer Activity Dashboard built with NestJS, Next.js, PostgreSQL, R
 ## Quick Start
 
 ```bash
-# Start PostgreSQL and Redis
-docker compose up -d postgres redis
+# Install all dependencies
+pnpm run install:all
 
-# Backend
-cd backend
-pnpm install
-pnpm run seed        # Seed 50+ sample customers
-pnpm run start:dev   # http://localhost:4000
+# Start everything (infra + backend + frontend) in one command
+pnpm run dev
+```
 
-# Frontend (separate terminal)
-cd frontend
-pnpm install
-pnpm run dev -- -p 3000   # http://localhost:3000
+Backend at http://localhost:4000, Frontend at http://localhost:3000.
+
+Seed the database (requires infra running):
+```bash
+pnpm run seed
+```
+
+**Alternative: step-by-step setup**
+```bash
+docker compose up -d postgres redis   # Start infra
+
+cd backend && pnpm install && pnpm run seed && pnpm run start:dev
+cd frontend && pnpm install && pnpm run dev
 ```
 
 **Full Docker stack** (all services):
 ```bash
-docker compose up -d          # Backend on :4000, Frontend on :3000
-docker compose up -d --build  # Rebuild after code changes
+pnpm run docker:up      # Backend on :4000, Frontend on :3000
+pnpm run docker:build   # Rebuild after code changes
 ```
 
 ## API Endpoints

@@ -42,18 +42,18 @@ services:
       - postgres
       - redis
 
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: propwise-frontend
-  #   restart: unless-stopped
-  #   ports:
-  #     - '3000:3000'
-  #   environment:
-  #     NEXT_PUBLIC_API_URL: http://backend:${PORT:-4000}
-  #   depends_on:
-  #     - backend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://backend:${PORT:-4000}
+    container_name: propwise-frontend
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
