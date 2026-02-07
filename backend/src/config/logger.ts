@@ -1,6 +1,6 @@
-import { createLogger, format, transports } from 'winston';
+import { createLogger, format, transports, Logform } from 'winston';
 
-export const winstonFormat = format.combine(
+export const winstonFormat: Logform.Format = format.combine(
   format.timestamp(),
   format.printf(({ timestamp, level, message }) => {
     return `${String(timestamp)} [${level}]: ${String(message)}`;
