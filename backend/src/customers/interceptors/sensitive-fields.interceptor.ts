@@ -11,6 +11,7 @@ import { Request } from 'express';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { stripSensitive } from '../utils/strip-sensitive';
+import { isInternalRequest } from '../utils/is-internal-request';
 
 @Injectable()
 export class SensitiveFieldsInterceptor implements NestInterceptor {
@@ -21,7 +22,9 @@ export class SensitiveFieldsInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<Request>();
-    const isInternal = request.headers['x-internal'] === 'true';
+    const isInternal = isInternalRequest(
+      request.headers['x-internal'] as string | undefined,
+    );
 
     if (isInternal) {
       this.logger.debug?.(

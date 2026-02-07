@@ -21,6 +21,7 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { BulkDeleteDto } from './dto/bulk-delete.dto';
 import { SensitiveFieldsInterceptor } from './interceptors/sensitive-fields.interceptor';
+import { isInternalRequest } from './utils/is-internal-request';
 
 @Controller('customers')
 @ApiTags('customers')
@@ -49,7 +50,7 @@ export class CustomersController {
     this.logger.log(
       `[CustomersController] GET /customers — query: ${JSON.stringify(query)}, internal: ${internal}`,
     );
-    return this.service.findAll(query, internal === 'true');
+    return this.service.findAll(query, isInternalRequest(internal));
   }
 
   @Get(':id')
@@ -63,7 +64,7 @@ export class CustomersController {
     this.logger.log(
       `[CustomersController] GET /customers/${id}, internal: ${internal}`,
     );
-    return this.service.findOne(id, internal === 'true');
+    return this.service.findOne(id, isInternalRequest(internal));
   }
 
   @Post()
@@ -77,11 +78,11 @@ export class CustomersController {
     this.logger.log(
       `[CustomersController] POST /customers — internal: ${internal}`,
     );
-    if (internal !== 'true') {
+    if (!isInternalRequest(internal)) {
       delete dto.national_id;
       delete dto.internal_notes;
     }
-    return this.service.create(dto);
+    return this.service.create(dto, isInternalRequest(internal));
   }
 
   @Put(':id')
@@ -97,11 +98,11 @@ export class CustomersController {
     this.logger.log(
       `[CustomersController] PUT /customers/${id} — internal: ${internal}`,
     );
-    if (internal !== 'true') {
+    if (!isInternalRequest(internal)) {
       delete dto.national_id;
       delete dto.internal_notes;
     }
-    return this.service.update(id, dto);
+    return this.service.update(id, dto, isInternalRequest(internal));
   }
 
   @Delete(':id')

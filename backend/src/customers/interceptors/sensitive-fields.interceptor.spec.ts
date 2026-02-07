@@ -93,6 +93,46 @@ describe('SensitiveFieldsInterceptor', () => {
     });
   });
 
+  it('should preserve all fields with x-internal: "True" (mixed case)', (done) => {
+    const context = createMockContext({ 'x-internal': 'True' });
+    const handler = createMockCallHandler({
+      id: '1',
+      full_name: 'John',
+      national_id: '123',
+      internal_notes: 'VIP',
+    });
+
+    interceptor.intercept(context, handler).subscribe((result) => {
+      expect(result).toEqual({
+        id: '1',
+        full_name: 'John',
+        national_id: '123',
+        internal_notes: 'VIP',
+      });
+      done();
+    });
+  });
+
+  it('should preserve all fields with x-internal: "TRUE" (uppercase)', (done) => {
+    const context = createMockContext({ 'x-internal': 'TRUE' });
+    const handler = createMockCallHandler({
+      id: '1',
+      full_name: 'John',
+      national_id: '123',
+      internal_notes: 'VIP',
+    });
+
+    interceptor.intercept(context, handler).subscribe((result) => {
+      expect(result).toEqual({
+        id: '1',
+        full_name: 'John',
+        national_id: '123',
+        internal_notes: 'VIP',
+      });
+      done();
+    });
+  });
+
   it('should pass through response with no sensitive fields unchanged', (done) => {
     const context = createMockContext({});
     const handler = createMockCallHandler({

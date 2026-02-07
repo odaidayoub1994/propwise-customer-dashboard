@@ -38,3 +38,8 @@ export const REDIS_HOST: string = parseFromEnvVar(
 export const REDIS_PORT: number = parseInt(
   parseFromEnvVar('REDIS_PORT', false, '6379'),
 );
+
+// Cache
+export const CACHE_TTL: number = parseInt(
+  parseFromEnvVar('CACHE_TTL', false, '60'),
+);

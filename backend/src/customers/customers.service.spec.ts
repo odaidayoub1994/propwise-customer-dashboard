@@ -8,6 +8,7 @@ jest.mock('../config/env.config', () => ({
   DB_NAME: 'test',
   PORT: 3000,
   CORS_ORIGIN: '*',
+  CACHE_TTL: 60,
 }));
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -365,7 +366,7 @@ describe('CustomersService', () => {
       mockRepository.create.mockReturnValue(savedCustomer);
       mockRepository.save.mockResolvedValue(savedCustomer);
 
-      const result = await service.create(createDto);
+      const result = await service.create(createDto, true);
 
       expect(mockRepository.create).toHaveBeenCalledWith(createDto);
       expect(mockRepository.save).toHaveBeenCalledWith(savedCustomer);
@@ -376,7 +377,7 @@ describe('CustomersService', () => {
       mockRepository.create.mockReturnValue(savedCustomer);
       mockRepository.save.mockResolvedValue(savedCustomer);
 
-      await service.create(createDto);
+      await service.create(createDto, true);
 
       expect(mockRedis.incr).toHaveBeenCalledWith('customers:list:version');
     });
@@ -385,7 +386,7 @@ describe('CustomersService', () => {
       mockRepository.create.mockReturnValue(savedCustomer);
       mockRepository.save.mockResolvedValue(savedCustomer);
 
-      await service.create(createDto);
+      await service.create(createDto, true);
 
       expect(mockGateway.emit).toHaveBeenCalledWith('customer.created', {
         id: 'uuid-new',
@@ -402,9 +403,26 @@ describe('CustomersService', () => {
       mockRepository.save.mockResolvedValue(savedCustomer);
       mockRedis.incr.mockRejectedValue(new Error('Redis down'));
 
-      const result = await service.create(createDto);
+      const result = await service.create(createDto, true);
 
       expect(result).toEqual(savedCustomer);
+    });
+
+    it('should strip sensitive fields when isInternal is false', async () => {
+      const dtoWithSensitive = {
+        full_name: 'John Smith',
+        email: 'john@example.com',
+        phone_number: '+962791234567',
+        national_id: '1234567890',
+        internal_notes: 'VIP client',
+      };
+      mockRepository.create.mockReturnValue(savedCustomer);
+      mockRepository.save.mockResolvedValue(savedCustomer);
+
+      await service.create(dtoWithSensitive, false);
+
+      expect(dtoWithSensitive.national_id).toBeUndefined();
+      expect(dtoWithSensitive.internal_notes).toBeUndefined();
     });
   });
 
@@ -428,7 +446,7 @@ describe('CustomersService', () => {
       mockRepository.findOneBy.mockResolvedValue({ ...existingCustomer });
       mockRepository.save.mockResolvedValue(updatedCustomer);
 
-      const result = await service.update('uuid-1', updateDto);
+      const result = await service.update('uuid-1', updateDto, true);
 
       expect(mockRepository.save).toHaveBeenCalled();
       expect(result).toEqual(updatedCustomer);
@@ -437,7 +455,7 @@ describe('CustomersService', () => {
     it('should throw NotFoundException when customer not found', async () => {
       mockRepository.findOneBy.mockResolvedValue(null);
 
-      await expect(service.update('uuid-999', updateDto)).rejects.toThrow(
+      await expect(service.update('uuid-999', updateDto, true)).rejects.toThrow(
         'Customer with id uuid-999 not found',
       );
     });
@@ -448,7 +466,7 @@ describe('CustomersService', () => {
       mockRedis.incr.mockResolvedValue(1);
       mockRedis.del.mockResolvedValue(2);
 
-      await service.update('uuid-1', updateDto);
+      await service.update('uuid-1', updateDto, true);
 
       expect(mockRedis.incr).toHaveBeenCalledWith('customers:list:version');
       expect(mockRedis.del).toHaveBeenCalledWith(
@@ -463,7 +481,7 @@ describe('CustomersService', () => {
       mockRedis.incr.mockResolvedValue(1);
       mockRedis.del.mockResolvedValue(2);
 
-      await service.update('uuid-1', updateDto);
+      await service.update('uuid-1', updateDto, true);
 
       expect(mockGateway.emit).toHaveBeenCalledWith('customer.updated', {
         id: 'uuid-1',
@@ -480,9 +498,24 @@ describe('CustomersService', () => {
       mockRepository.save.mockResolvedValue(updatedCustomer);
       mockRedis.incr.mockRejectedValue(new Error('Redis down'));
 
-      const result = await service.update('uuid-1', updateDto);
+      const result = await service.update('uuid-1', updateDto, true);
 
       expect(result).toEqual(updatedCustomer);
+    });
+
+    it('should strip sensitive fields when isInternal is false', async () => {
+      const dtoWithSensitive = {
+        full_name: 'John Updated',
+        national_id: '1234567890',
+        internal_notes: 'Updated notes',
+      };
+      mockRepository.findOneBy.mockResolvedValue({ ...existingCustomer });
+      mockRepository.save.mockResolvedValue(updatedCustomer);
+
+      await service.update('uuid-1', dtoWithSensitive, false);
+
+      expect(dtoWithSensitive.national_id).toBeUndefined();
+      expect(dtoWithSensitive.internal_notes).toBeUndefined();
     });
   });
 

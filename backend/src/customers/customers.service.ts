@@ -19,6 +19,7 @@ import { QueryCustomerDto } from './dto/query-customer.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { stripSensitive } from './utils/strip-sensitive';
+import { CACHE_TTL } from '../config/env.config';
 
 @Injectable()
 export class CustomersService {
@@ -99,11 +100,21 @@ export class CustomersService {
     // Sanitize for public cache, then cache and return
     const responseData = isInternal
       ? result
-      : { ...result, data: result.data.map((c) => stripSensitive({ ...c })) };
+      : {
+          ...result,
+          data: result.data.map((c) =>
+            stripSensitive(c as unknown as Record<string, unknown>),
+          ),
+        };
 
     if (cacheKey) {
       try {
-        await this.redis.set(cacheKey, JSON.stringify(responseData), 'EX', 60);
+        await this.redis.set(
+          cacheKey,
+          JSON.stringify(responseData),
+          'EX',
+          CACHE_TTL,
+        );
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         this.logger.warn(
@@ -139,10 +150,15 @@ export class CustomersService {
 
     const responseData = isInternal
       ? customer
-      : stripSensitive({ ...customer });
+      : stripSensitive(customer as unknown as Record<string, unknown>);
 
     try {
-      await this.redis.set(cacheKey, JSON.stringify(responseData), 'EX', 60);
+      await this.redis.set(
+        cacheKey,
+        JSON.stringify(responseData),
+        'EX',
+        CACHE_TTL,
+      );
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       this.logger.warn(`[CustomersService] Redis set error: ${error.message}`);
@@ -151,7 +167,12 @@ export class CustomersService {
     return responseData;
   }
 
-  async create(dto: CreateCustomerDto) {
+  async create(dto: CreateCustomerDto, isInternal: boolean) {
+    if (!isInternal) {
+      delete dto.national_id;
+      delete dto.internal_notes;
+    }
+
     const saved = await this.repo.save(this.repo.create(dto));
 
     this.logger.log(
@@ -177,7 +198,12 @@ export class CustomersService {
     return saved;
   }
 
-  async update(id: string, dto: UpdateCustomerDto) {
+  async update(id: string, dto: UpdateCustomerDto, isInternal: boolean) {
+    if (!isInternal) {
+      delete dto.national_id;
+      delete dto.internal_notes;
+    }
+
     const customer = await this.repo.findOneBy({ id });
     if (!customer) {
       throw new NotFoundException(`Customer with id ${id} not found`);

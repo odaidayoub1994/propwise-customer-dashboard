@@ -67,6 +67,14 @@ describe('CustomersController', () => {
 
       expect(mockService.findAll).toHaveBeenCalledWith(query, false);
     });
+
+    it('should treat "True" (mixed case) as internal', async () => {
+      mockService.findAll.mockResolvedValue({ data: [], meta: {} });
+
+      await controller.findAll(query, 'True');
+
+      expect(mockService.findAll).toHaveBeenCalledWith(query, true);
+    });
   });
 
   describe('findOne', () => {
@@ -102,7 +110,7 @@ describe('CustomersController', () => {
 
       expect(dto.national_id).toBeUndefined();
       expect(dto.internal_notes).toBeUndefined();
-      expect(mockService.create).toHaveBeenCalledWith(dto);
+      expect(mockService.create).toHaveBeenCalledWith(dto, false);
     });
 
     it('should preserve sensitive fields when x-internal is true', async () => {
@@ -119,7 +127,24 @@ describe('CustomersController', () => {
 
       expect(dto.national_id).toBe('1234567890');
       expect(dto.internal_notes).toBe('VIP client');
-      expect(mockService.create).toHaveBeenCalledWith(dto);
+      expect(mockService.create).toHaveBeenCalledWith(dto, true);
+    });
+
+    it('should preserve sensitive fields when x-internal is "TRUE" (uppercase)', async () => {
+      const dto: CreateCustomerDto = {
+        full_name: 'John Smith',
+        email: 'john@example.com',
+        phone_number: '+962791234567',
+        national_id: '1234567890',
+        internal_notes: 'VIP client',
+      };
+      mockService.create.mockResolvedValue({ id: 'uuid-new' });
+
+      await controller.create(dto, 'TRUE');
+
+      expect(dto.national_id).toBe('1234567890');
+      expect(dto.internal_notes).toBe('VIP client');
+      expect(mockService.create).toHaveBeenCalledWith(dto, true);
     });
   });
 
@@ -136,7 +161,7 @@ describe('CustomersController', () => {
 
       expect(dto.national_id).toBeUndefined();
       expect(dto.internal_notes).toBeUndefined();
-      expect(mockService.update).toHaveBeenCalledWith('uuid-1', dto);
+      expect(mockService.update).toHaveBeenCalledWith('uuid-1', dto, false);
     });
 
     it('should preserve sensitive fields when x-internal is true', async () => {
@@ -151,7 +176,7 @@ describe('CustomersController', () => {
 
       expect(dto.national_id).toBe('1234567890');
       expect(dto.internal_notes).toBe('Updated notes');
-      expect(mockService.update).toHaveBeenCalledWith('uuid-1', dto);
+      expect(mockService.update).toHaveBeenCalledWith('uuid-1', dto, true);
     });
   });
 
