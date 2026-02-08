@@ -174,13 +174,13 @@ export function CustomerTable() {
     (column: SortColumn) => {
       if (sortBy !== column) {
         return (
-          <ArrowUpDown className="ml-1 inline h-3 w-3 text-muted-foreground" />
+          <ArrowUpDown className="ml-1 inline h-3.5 w-3.5 text-muted-foreground" />
         );
       }
       return sortOrder === "ASC" ? (
-        <ArrowUp className="ml-1 inline h-3 w-3 text-primary" />
+        <ArrowUp className="ml-1 inline h-3.5 w-3.5 text-primary" />
       ) : (
-        <ArrowDown className="ml-1 inline h-3 w-3 text-primary" />
+        <ArrowDown className="ml-1 inline h-3.5 w-3.5 text-primary" />
       );
     },
     [sortBy, sortOrder],
@@ -267,13 +267,18 @@ export function CustomerTable() {
           <TableHeader>
             <TableRow>
               <TableHead>
-                <Checkbox checked={allSelected} onCheckedChange={toggleAll} />
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={toggleAll}
+                  aria-label="Select all customers"
+                />
               </TableHead>
               <TableHead>
                 <button
                   type="button"
-                  className="font-medium hover:underline"
+                  className="cursor-pointer font-medium transition-colors hover:underline"
                   onClick={() => handleSort("full_name")}
+                  aria-label={`Sort by name${sortBy === "full_name" ? `, currently ${sortOrder === "ASC" ? "ascending" : "descending"}` : ""}`}
                 >
                   Name{sortIcon("full_name")}
                 </button>
@@ -293,8 +298,9 @@ export function CustomerTable() {
               <TableHead>
                 <button
                   type="button"
-                  className="font-medium hover:underline"
+                  className="cursor-pointer font-medium transition-colors hover:underline"
                   onClick={() => handleSort("created_at")}
+                  aria-label={`Sort by created date${sortBy === "created_at" ? `, currently ${sortOrder === "ASC" ? "ascending" : "descending"}` : ""}`}
                 >
                   Created{sortIcon("created_at")}
                 </button>
@@ -374,11 +380,13 @@ export function CustomerTable() {
                   data-state={
                     selectedIds.has(customer.id) ? "selected" : undefined
                   }
+                  className={`transition-colors duration-150${selectedIds.has(customer.id) ? " bg-muted/50" : ""}`}
                 >
                   <TableCell>
                     <Checkbox
                       checked={selectedIds.has(customer.id)}
                       onCheckedChange={() => toggleOne(customer.id)}
+                      aria-label={`Select ${customer.full_name}`}
                     />
                   </TableCell>
                   <TableCell className="min-w-0 font-medium">
