@@ -252,7 +252,7 @@ export function CustomerTable() {
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 rounded-md bg-muted p-3">
+        <div className="flex items-center gap-3 rounded-md bg-muted p-3 transition-all duration-200">
           <span className="text-sm font-medium">
             {selectedIds.size} selected
           </span>
