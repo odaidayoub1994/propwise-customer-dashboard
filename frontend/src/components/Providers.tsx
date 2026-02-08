@@ -7,6 +7,8 @@ import { Toaster } from 'sonner';
 import { makeQueryClient } from '@/lib/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AdminProvider } from '@/context/AdminContext';
+import { SocketProvider } from '@/context/SocketContext';
+import { ConnectionStatus } from '@/components/ConnectionStatus';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => makeQueryClient());
@@ -16,8 +18,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <TooltipProvider>
           <AdminProvider>
-            {children}
-            <Toaster richColors position="top-right" />
+            <SocketProvider>
+              {children}
+              <ConnectionStatus />
+              <Toaster richColors position="top-right" />
+            </SocketProvider>
           </AdminProvider>
         </TooltipProvider>
       </ThemeProvider>

@@ -1,50 +1,56 @@
 'use client';
 
 import { useEffect } from 'react';
-import { io } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { API_URL } from '@/config/env.config';
+import { useSocketInstance } from '@/context/SocketContext';
 import { customerKeys } from '@/features/customers/keys';
-
-interface CustomerEvent {
-  id: string;
-  full_name: string;
-  email: string;
-}
-
-interface BulkDeleteEvent {
-  ids: string[];
-}
+import { SOCKET_EVENTS } from '@/features/customers/socket-events';
+import type {
+  CustomerSocketPayload,
+  BulkDeletedPayload,
+} from '@/features/customers/types';
 
 export function useSocket() {
+  const socket = useSocketInstance();
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const socket = io(API_URL);
+    if (!socket) return;
 
-    socket.on('customer.created', (payload: CustomerEvent) => {
+    const invalidate = () =>
+      queryClient.invalidateQueries({ queryKey: customerKeys.all });
+
+    const onCreated = (payload: CustomerSocketPayload) => {
       toast.success(`Customer "${payload.full_name}" created`);
-      queryClient.invalidateQueries({ queryKey: customerKeys.all });
-    });
+      invalidate();
+    };
 
-    socket.on('customer.updated', (payload: CustomerEvent) => {
+    const onUpdated = (payload: CustomerSocketPayload) => {
       toast.info(`Customer "${payload.full_name}" updated`);
-      queryClient.invalidateQueries({ queryKey: customerKeys.all });
-    });
+      invalidate();
+    };
 
-    socket.on('customer.deleted', () => {
+    const onDeleted = () => {
       toast.warning('Customer deleted');
-      queryClient.invalidateQueries({ queryKey: customerKeys.all });
-    });
+      invalidate();
+    };
 
-    socket.on('customers.bulk_deleted', (payload: BulkDeleteEvent) => {
+    const onBulkDeleted = (payload: BulkDeletedPayload) => {
       toast.warning(`${payload.ids.length} customers deleted`);
-      queryClient.invalidateQueries({ queryKey: customerKeys.all });
-    });
+      invalidate();
+    };
+
+    socket.on(SOCKET_EVENTS.CUSTOMER_CREATED, onCreated);
+    socket.on(SOCKET_EVENTS.CUSTOMER_UPDATED, onUpdated);
+    socket.on(SOCKET_EVENTS.CUSTOMER_DELETED, onDeleted);
+    socket.on(SOCKET_EVENTS.CUSTOMERS_BULK_DELETED, onBulkDeleted);
 
     return () => {
-      socket.disconnect();
+      socket.off(SOCKET_EVENTS.CUSTOMER_CREATED, onCreated);
+      socket.off(SOCKET_EVENTS.CUSTOMER_UPDATED, onUpdated);
+      socket.off(SOCKET_EVENTS.CUSTOMER_DELETED, onDeleted);
+      socket.off(SOCKET_EVENTS.CUSTOMERS_BULK_DELETED, onBulkDeleted);
     };
-  }, [queryClient]);
+  }, [socket, queryClient]);
 }

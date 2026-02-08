@@ -17,6 +17,7 @@ import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { CustomersService } from './customers.service';
 import { Customer } from './entities/customer.entity';
 import { SocketService } from '../socket/socket.service';
+import { SOCKET_EVENTS } from '../socket/socket-events';
 import { CacheService } from '../cache/cache.service';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 
@@ -408,14 +409,14 @@ describe('CustomersService', () => {
 
       await service.create(createDto, true);
 
-      expect(mockGateway.emit).toHaveBeenCalledWith('customer.created', {
-        id: 'uuid-new',
-        full_name: 'John Smith',
-        email: 'john@example.com',
-        phone_number: '+962791234567',
-        created_at: savedCustomer.created_at,
-        updated_at: savedCustomer.updated_at,
-      });
+      expect(mockGateway.emit).toHaveBeenCalledWith(
+        SOCKET_EVENTS.CUSTOMER_CREATED,
+        {
+          id: 'uuid-new',
+          full_name: 'John Smith',
+          email: 'john@example.com',
+        },
+      );
     });
 
     it('should strip sensitive fields when isInternal is false', async () => {
@@ -491,14 +492,14 @@ describe('CustomersService', () => {
 
       await service.update('uuid-1', updateDto, true);
 
-      expect(mockGateway.emit).toHaveBeenCalledWith('customer.updated', {
-        id: 'uuid-1',
-        full_name: 'John Updated',
-        email: 'john@example.com',
-        phone_number: '+962791234567',
-        created_at: updatedCustomer.created_at,
-        updated_at: updatedCustomer.updated_at,
-      });
+      expect(mockGateway.emit).toHaveBeenCalledWith(
+        SOCKET_EVENTS.CUSTOMER_UPDATED,
+        {
+          id: 'uuid-1',
+          full_name: 'John Updated',
+          email: 'john@example.com',
+        },
+      );
     });
 
     it('should strip sensitive fields when isInternal is false', async () => {
@@ -544,9 +545,10 @@ describe('CustomersService', () => {
         'customers:detail:uuid-1:true',
         'customers:detail:uuid-1:false',
       );
-      expect(mockGateway.emit).toHaveBeenCalledWith('customer.deleted', {
-        id: 'uuid-1',
-      });
+      expect(mockGateway.emit).toHaveBeenCalledWith(
+        SOCKET_EVENTS.CUSTOMER_DELETED,
+        { id: 'uuid-1' },
+      );
     });
 
     it('should throw NotFoundException when customer not found', async () => {
@@ -575,9 +577,12 @@ describe('CustomersService', () => {
         'customers:detail:uuid-2:true',
         'customers:detail:uuid-2:false',
       );
-      expect(mockGateway.emit).toHaveBeenCalledWith('customers.bulk_deleted', {
-        ids: ['uuid-1', 'uuid-2'],
-      });
+      expect(mockGateway.emit).toHaveBeenCalledWith(
+        SOCKET_EVENTS.CUSTOMERS_BULK_DELETED,
+        {
+          ids: ['uuid-1', 'uuid-2'],
+        },
+      );
     });
 
     it('should handle empty ids array and return ids with deletedCount 0', async () => {
@@ -588,9 +593,12 @@ describe('CustomersService', () => {
       expect(result).toEqual({ ids: [], deletedCount: 0 });
       expect(mockRepository.delete).toHaveBeenCalled();
       expect(mockCacheService.deleteKeys).not.toHaveBeenCalled();
-      expect(mockGateway.emit).toHaveBeenCalledWith('customers.bulk_deleted', {
-        ids: [],
-      });
+      expect(mockGateway.emit).toHaveBeenCalledWith(
+        SOCKET_EVENTS.CUSTOMERS_BULK_DELETED,
+        {
+          ids: [],
+        },
+      );
     });
   });
 });

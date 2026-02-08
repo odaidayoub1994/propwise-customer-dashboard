@@ -36,3 +36,18 @@ export interface CustomerQuery {
   date_from?: string;
   date_to?: string;
 }
+
+// Socket event payloads
+export interface CustomerSocketPayload {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+export interface CustomerDeletedPayload {
+  id: string;
+}
+
+export interface BulkDeletedPayload {
+  ids: string[];
+}

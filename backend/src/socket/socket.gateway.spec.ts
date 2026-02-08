@@ -1,6 +1,11 @@
+jest.mock('../config/env.config', () => ({
+  CORS_ORIGIN: '*',
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { SocketGateway } from './socket.gateway';
+import { SOCKET_EVENTS } from './socket-events';
 
 const mockLogger = {
   log: jest.fn(),
@@ -38,25 +43,31 @@ describe('SocketGateway', () => {
     it('should call server.emit with correct event and payload', () => {
       const payload = { id: 'uuid-1', name: 'Test' };
 
-      gateway.emit('customer.created', payload);
+      gateway.emit(SOCKET_EVENTS.CUSTOMER_CREATED, payload);
 
-      expect(mockServer.emit).toHaveBeenCalledWith('customer.created', payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        SOCKET_EVENTS.CUSTOMER_CREATED,
+        payload,
+      );
     });
 
     it('should log debug message on emit', () => {
-      gateway.emit('customer.updated', { id: 'uuid-1' });
+      gateway.emit(SOCKET_EVENTS.CUSTOMER_UPDATED, { id: 'uuid-1' });
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        '[SocketGateway] Emitting customer.updated',
+        `[SocketGateway] Emitting ${SOCKET_EVENTS.CUSTOMER_UPDATED}`,
       );
     });
 
     it('should handle different event names and payloads', () => {
-      gateway.emit('customers.bulk_deleted', { ids: ['a', 'b'] });
-
-      expect(mockServer.emit).toHaveBeenCalledWith('customers.bulk_deleted', {
+      gateway.emit(SOCKET_EVENTS.CUSTOMERS_BULK_DELETED, {
         ids: ['a', 'b'],
       });
+
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        SOCKET_EVENTS.CUSTOMERS_BULK_DELETED,
+        { ids: ['a', 'b'] },
+      );
     });
   });
 

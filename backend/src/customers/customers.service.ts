@@ -14,6 +14,7 @@ import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Customer } from './entities/customer.entity';
 import { escapeILike } from './utils/escape-ilike';
 import { SocketService } from '../socket/socket.service';
+import { SOCKET_EVENTS } from '../socket/socket-events';
 import { CacheService } from '../cache/cache.service';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -48,9 +49,6 @@ export class CustomersService {
       id: customer.id,
       full_name: customer.full_name,
       email: customer.email,
-      phone_number: customer.phone_number,
-      created_at: customer.created_at,
-      updated_at: customer.updated_at,
     };
   }
 
@@ -167,7 +165,7 @@ export class CustomersService {
     await this.invalidateCaches();
 
     this.socketService.emit(
-      'customer.created',
+      SOCKET_EVENTS.CUSTOMER_CREATED,
       this.buildCustomerPayload(saved),
     );
 
@@ -195,7 +193,7 @@ export class CustomersService {
     await this.invalidateCaches([id]);
 
     this.socketService.emit(
-      'customer.updated',
+      SOCKET_EVENTS.CUSTOMER_UPDATED,
       this.buildCustomerPayload(saved),
     );
 
@@ -214,7 +212,7 @@ export class CustomersService {
 
     await this.invalidateCaches([id]);
 
-    this.socketService.emit('customer.deleted', { id });
+    this.socketService.emit(SOCKET_EVENTS.CUSTOMER_DELETED, { id });
 
     return { id };
   }
@@ -229,7 +227,7 @@ export class CustomersService {
 
     await this.invalidateCaches(ids.length > 0 ? ids : undefined);
 
-    this.socketService.emit('customers.bulk_deleted', { ids });
+    this.socketService.emit(SOCKET_EVENTS.CUSTOMERS_BULK_DELETED, { ids });
 
     return { ids, deletedCount };
   }

@@ -9,8 +9,10 @@ import { Inject } from '@nestjs/common';
 import type { LoggerService } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Server, Socket } from 'socket.io';
+import type { SocketEventName } from './socket-events';
+import { CORS_ORIGIN } from '../config/env.config';
 
-@WebSocketGateway({ cors: { origin: '*' } })
+@WebSocketGateway({ cors: { origin: CORS_ORIGIN } })
 export class SocketGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
@@ -22,7 +24,7 @@ export class SocketGateway
   @WebSocketServer()
   server: Server;
 
-  emit(event: string, payload: unknown) {
+  emit(event: SocketEventName, payload: unknown) {
     this.logger.debug?.(`[SocketGateway] Emitting ${event}`);
     this.server.emit(event, payload);
   }
