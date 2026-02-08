@@ -187,6 +187,20 @@ describe('CustomersService', () => {
       expect(where[1]).toHaveProperty('email');
     });
 
+    it('should escape special ILike characters in search query', async () => {
+      mockCacheService.getVersion.mockResolvedValue('0');
+      mockCacheService.get.mockResolvedValue(null);
+      mockRepository.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAll({ ...defaultQuery, q: '50%_off' }, false);
+
+      const call = mockRepository.findAndCount.mock.calls[0] as unknown[];
+      const args = call[0] as Record<string, unknown>;
+      const where = args.where as Record<string, unknown>[];
+      const fullNameFilter = where[0] as Record<string, { _value: string }>;
+      expect(fullNameFilter.full_name._value).toBe('%50\\%\\_off%');
+    });
+
     it('should apply correct pagination', async () => {
       mockCacheService.getVersion.mockResolvedValue('0');
       mockCacheService.get.mockResolvedValue(null);
