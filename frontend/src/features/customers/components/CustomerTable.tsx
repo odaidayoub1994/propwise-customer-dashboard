@@ -182,9 +182,9 @@ export function CustomerTable() {
   );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4 p-6">
+    <div className="mx-auto max-w-7xl space-y-4 p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex items-center gap-3">
           <AdminToggle />
@@ -210,7 +210,7 @@ export function CustomerTable() {
             value={dateFrom}
             onChange={(e) => handleDateChange("from", e.target.value)}
             max={dateTo || undefined}
-            className="w-40"
+            className="w-full sm:w-40"
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -223,7 +223,7 @@ export function CustomerTable() {
             value={dateTo}
             onChange={(e) => handleDateChange("to", e.target.value)}
             min={dateFrom || undefined}
-            className="w-40"
+            className="w-full sm:w-40"
           />
         </div>
         {(dateFrom || dateTo) && (
@@ -257,7 +257,7 @@ export function CustomerTable() {
       )}
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -274,9 +274,17 @@ export function CustomerTable() {
                 </button>
               </TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              {isInternal && <TableHead>National ID</TableHead>}
-              {isInternal && <TableHead>Internal Notes</TableHead>}
+              <TableHead className="hidden md:table-cell">Phone</TableHead>
+              {isInternal && (
+                <TableHead className="hidden md:table-cell">
+                  National ID
+                </TableHead>
+              )}
+              {isInternal && (
+                <TableHead className="hidden md:table-cell">
+                  Internal Notes
+                </TableHead>
+              )}
               <TableHead>
                 <button
                   type="button"
@@ -334,16 +342,22 @@ export function CustomerTable() {
                       onCheckedChange={() => toggleOne(customer.id)}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">
+                  <TableCell className="min-w-0 font-medium">
                     {customer.full_name}
                   </TableCell>
-                  <TableCell>{customer.email}</TableCell>
-                  <TableCell>{customer.phone_number}</TableCell>
+                  <TableCell className="min-w-0">
+                    {customer.email}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {customer.phone_number}
+                  </TableCell>
                   {isInternal && (
-                    <TableCell>{customer.national_id ?? "—"}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {customer.national_id ?? "—"}
+                    </TableCell>
                   )}
                   {isInternal && (
-                    <TableCell className="max-w-50 truncate">
+                    <TableCell className="hidden max-w-50 truncate md:table-cell">
                       {customer.internal_notes ?? "—"}
                     </TableCell>
                   )}
