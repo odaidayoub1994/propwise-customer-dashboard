@@ -69,17 +69,15 @@ export function useCustomerFilters(
 
   const handleSort = useCallback(
     (column: SortColumn) => {
-      setSortBy((prevSortBy) => {
-        if (prevSortBy === column) {
-          setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
-        } else {
-          setSortOrder(column === 'full_name' ? 'ASC' : 'DESC');
-        }
-        return column;
-      });
+      if (sortBy === column) {
+        setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
+      } else {
+        setSortBy(column);
+        setSortOrder(column === 'full_name' ? 'ASC' : 'DESC');
+      }
       resetPageAndSelection();
     },
-    [resetPageAndSelection],
+    [sortBy, resetPageAndSelection],
   );
 
   const handlePageChange = useCallback(
