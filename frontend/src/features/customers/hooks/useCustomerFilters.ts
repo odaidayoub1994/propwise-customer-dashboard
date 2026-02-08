@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import {
+  DATE_AUTOFILL_DELAY,
   DEFAULT_PAGE,
   DEFAULT_SORT_BY,
   DEFAULT_SORT_ORDER,
@@ -36,6 +37,17 @@ export function useCustomerFilters(
   const [sortOrder, setSortOrder] = useState<SortOrder>(DEFAULT_SORT_ORDER);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+
+  useEffect(() => {
+    if (!dateFrom || dateTo) return;
+
+    const timer = setTimeout(() => {
+      const today = new Date().toISOString().split('T')[0];
+      setDateTo(today);
+    }, DATE_AUTOFILL_DELAY);
+
+    return () => clearTimeout(timer);
+  }, [dateFrom, dateTo]);
 
   const hasActiveFilters = !!(search || dateFrom || dateTo);
 
