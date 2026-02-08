@@ -12,6 +12,7 @@ import {
 } from 'typeorm';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Customer } from './entities/customer.entity';
+import { escapeILike } from './utils/escape-ilike';
 import { SocketService } from '../socket/socket.service';
 import { CacheService } from '../cache/cache.service';
 import { QueryCustomerDto } from './dto/query-customer.dto';
@@ -73,8 +74,9 @@ export class CustomersService {
 
     const where: FindOptionsWhere<Customer>[] = [];
     if (q) {
-      where.push({ full_name: ILike(`%${q}%`), ...dateFilter });
-      where.push({ email: ILike(`%${q}%`), ...dateFilter });
+      const escaped = escapeILike(q);
+      where.push({ full_name: ILike(`%${escaped}%`), ...dateFilter });
+      where.push({ email: ILike(`%${escaped}%`), ...dateFilter });
     } else if (Object.keys(dateFilter).length > 0) {
       where.push(dateFilter);
     }
