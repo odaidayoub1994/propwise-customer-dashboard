@@ -42,7 +42,7 @@ import { Pagination } from "@/components/Pagination";
 import { useAdminMode } from "@/context/AdminContext";
 import { useCustomers } from "@/features/customers/hooks/useCustomers";
 import { useCustomerFilters } from "@/features/customers/hooks/useCustomerFilters";
-import { DEFAULT_LIMIT } from "@/features/customers/constants";
+import { DEFAULT_LIMIT, MIN_SEARCH_LENGTH } from "@/features/customers/constants";
 import {
   useDeleteCustomer,
   useBulkDeleteCustomers,
@@ -93,11 +93,17 @@ export function CustomerTable() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
 
+  const trimmedSearch = debouncedSearch.trim();
+  const searchHint =
+    trimmedSearch.length > 0 && trimmedSearch.length < MIN_SEARCH_LENGTH
+      ? `Type ${MIN_SEARCH_LENGTH - trimmedSearch.length} more character${MIN_SEARCH_LENGTH - trimmedSearch.length === 1 ? "" : "s"} to search…`
+      : undefined;
+
   // Data hooks
   const { data, isLoading, isError, refetch } = useCustomers({
     page,
     limit: DEFAULT_LIMIT,
-    q: debouncedSearch || undefined,
+    q: trimmedSearch.length >= MIN_SEARCH_LENGTH ? trimmedSearch : undefined,
     sort_by: sortBy,
     sort_order: sortOrder,
     date_from: dateFrom || undefined,
@@ -207,7 +213,7 @@ export function CustomerTable() {
       </div>
 
       {/* Search */}
-      <SearchBar value={search} onChange={handleSearchChange} />
+      <SearchBar value={search} onChange={handleSearchChange} hint={searchHint} />
 
       {/* Date range filter */}
       <div className="flex flex-wrap items-end gap-3">
