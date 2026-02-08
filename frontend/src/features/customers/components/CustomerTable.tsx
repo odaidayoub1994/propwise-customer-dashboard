@@ -2,12 +2,15 @@
 
 import { useCallback, useMemo, useState } from "react";
 import {
+  AlertCircle,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
   MoreHorizontal,
   Plus,
+  SearchX,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,11 +72,13 @@ export function CustomerTable() {
     sortOrder,
     dateFrom,
     dateTo,
+    hasActiveFilters,
     handleSearchChange,
     handleDateChange,
     clearDateFilters,
     handleSort,
     handlePageChange,
+    clearAllFilters,
   } = useCustomerFilters(clearSelection);
 
   // Modal state
@@ -83,7 +88,7 @@ export function CustomerTable() {
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
 
   // Data hooks
-  const { data, isLoading, isError } = useCustomers({
+  const { data, isLoading, isError, refetch } = useCustomers({
     page,
     limit: DEFAULT_LIMIT,
     q: debouncedSearch || undefined,
@@ -314,18 +319,52 @@ export function CustomerTable() {
               <TableRow>
                 <TableCell
                   colSpan={isInternal ? 8 : 6}
-                  className="h-24 text-center text-destructive"
+                  className="h-32 text-center"
                 >
-                  Failed to load customers. Please try again later.
+                  <div className="flex flex-col items-center gap-2">
+                    <AlertCircle className="h-8 w-8 text-destructive" />
+                    <p className="text-sm text-destructive">
+                      Failed to load customers.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => refetch()}
+                    >
+                      Retry
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : customers.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={isInternal ? 8 : 6}
-                  className="h-24 text-center text-muted-foreground"
+                  className="h-32 text-center"
                 >
-                  No customers found.
+                  {hasActiveFilters ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <SearchX className="h-8 w-8 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        No customers match your filters.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={clearAllFilters}
+                      >
+                        Clear filters
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <Users className="h-8 w-8 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        No customers yet. Click &quot;Add Customer&quot; to get
+                        started.
+                      </p>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ) : (
