@@ -6,7 +6,6 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  MoreHorizontal,
   Plus,
   SearchX,
   Trash2,
@@ -17,12 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -163,6 +156,7 @@ export function CustomerTable() {
   }, []);
 
   const handleConfirmDelete = useCallback(() => {
+    if (deletingIds.length === 0) return;
     if (deletingIds.length === 1) {
       deleteMutation.mutate(deletingIds[0], {
         onSuccess: () => {
@@ -315,10 +309,10 @@ export function CustomerTable() {
                   onClick={() => handleSort("created_at")}
                   aria-label={`Sort by created date${sortBy === "created_at" ? `, currently ${sortOrder === "ASC" ? "ascending" : "descending"}` : ""}`}
                 >
-                  Created{sortIcon("created_at")}
+                  Created At{sortIcon("created_at")}
                 </button>
               </TableHead>
-              <TableHead className="w-10" />
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -436,26 +430,23 @@ export function CustomerTable() {
                   )}
                   <TableCell>{formatDate(customer.created_at)}</TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => openEditModal(customer)}
-                        >
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => openDeleteModal([customer.id])}
-                        >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditModal(customer)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => openDeleteModal([customer.id])}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
