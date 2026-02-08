@@ -1,9 +1,11 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { MoreHorizontal, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, MoreHorizontal, Plus, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +46,8 @@ export function CustomerTable() {
     'created_at',
   );
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -61,6 +65,8 @@ export function CustomerTable() {
     q: debouncedSearch || undefined,
     sort_by: sortBy,
     sort_order: sortOrder,
+    date_from: dateFrom || undefined,
+    date_to: dateTo || undefined,
   });
   const deleteMutation = useDeleteCustomer();
   const bulkDeleteMutation = useBulkDeleteCustomers();
@@ -94,6 +100,21 @@ export function CustomerTable() {
   // Search handler — reset page on new search
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
+    setPage(1);
+    setSelectedIds(new Set());
+  }, []);
+
+  // Date filter handlers
+  const handleDateChange = useCallback((field: 'from' | 'to', value: string) => {
+    if (field === 'from') setDateFrom(value);
+    else setDateTo(value);
+    setPage(1);
+    setSelectedIds(new Set());
+  }, []);
+
+  const clearDateFilters = useCallback(() => {
+    setDateFrom('');
+    setDateTo('');
     setPage(1);
     setSelectedIds(new Set());
   }, []);
@@ -163,11 +184,15 @@ export function CustomerTable() {
     }
   }, [deletingIds, deleteMutation, bulkDeleteMutation, closeDeleteModal]);
 
-  // Sort indicator
-  const sortIndicator = useCallback(
+  // Sort icon — shows direction on active column, ↕ on inactive
+  const sortIcon = useCallback(
     (column: 'created_at' | 'full_name') => {
-      if (sortBy !== column) return '';
-      return sortOrder === 'ASC' ? ' \u2191' : ' \u2193';
+      if (sortBy !== column) {
+        return <ArrowUpDown className="ml-1 inline h-3 w-3 text-muted-foreground" />;
+      }
+      return sortOrder === 'ASC'
+        ? <ArrowUp className="ml-1 inline h-3 w-3" />
+        : <ArrowDown className="ml-1 inline h-3 w-3" />;
     },
     [sortBy, sortOrder],
   );
@@ -199,6 +224,38 @@ export function CustomerTable() {
 
       {/* Search */}
       <SearchBar value={search} onChange={handleSearchChange} />
+
+      {/* Date range filter */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="date-from" className="text-xs text-muted-foreground">From</Label>
+          <Input
+            id="date-from"
+            type="date"
+            value={dateFrom}
+            onChange={(e) => handleDateChange('from', e.target.value)}
+            max={dateTo || undefined}
+            className="w-40"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="date-to" className="text-xs text-muted-foreground">To</Label>
+          <Input
+            id="date-to"
+            type="date"
+            value={dateTo}
+            onChange={(e) => handleDateChange('to', e.target.value)}
+            min={dateFrom || undefined}
+            className="w-40"
+          />
+        </div>
+        {(dateFrom || dateTo) && (
+          <Button variant="ghost" size="sm" onClick={clearDateFilters} className="text-muted-foreground">
+            <X className="mr-1 h-3 w-3" />
+            Clear dates
+          </Button>
+        )}
+      </div>
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
@@ -234,7 +291,7 @@ export function CustomerTable() {
                   className="font-medium hover:underline"
                   onClick={() => handleSort('full_name')}
                 >
-                  Name{sortIndicator('full_name')}
+                  Name{sortIcon('full_name')}
                 </button>
               </TableHead>
               <TableHead>Email</TableHead>
@@ -247,7 +304,7 @@ export function CustomerTable() {
                   className="font-medium hover:underline"
                   onClick={() => handleSort('created_at')}
                 >
-                  Created{sortIndicator('created_at')}
+                  Created{sortIcon('created_at')}
                 </button>
               </TableHead>
               <TableHead className="w-10" />
