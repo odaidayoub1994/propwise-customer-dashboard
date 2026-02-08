@@ -19,12 +19,15 @@ export interface PaginatedResponse<T> {
   };
 }
 
+export type SortColumn = 'created_at' | 'full_name';
+export type SortOrder = 'ASC' | 'DESC';
+
 export interface CustomerQuery {
   page?: number;
   limit?: number;
   q?: string;
-  sort_by?: 'created_at' | 'full_name';
-  sort_order?: 'ASC' | 'DESC';
+  sort_by?: SortColumn;
+  sort_order?: SortOrder;
   date_from?: string;
   date_to?: string;
 }

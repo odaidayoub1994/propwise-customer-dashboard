@@ -33,7 +33,7 @@ import { SearchBar } from '@/features/customers/components/SearchBar';
 import { CustomerFormModal } from '@/features/customers/components/CustomerFormModal';
 import { DeleteConfirmModal } from '@/features/customers/components/DeleteConfirmModal';
 import { ToastNotifications } from '@/features/customers/components/ToastNotifications';
-import type { Customer } from '@/features/customers/types';
+import type { Customer, SortColumn, SortOrder } from '@/features/customers/types';
 
 export function CustomerTable() {
   const { isInternal } = useAdminMode();
@@ -42,10 +42,8 @@ export function CustomerTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 300);
-  const [sortBy, setSortBy] = useState<'created_at' | 'full_name'>(
-    'created_at',
-  );
-  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+  const [sortBy, setSortBy] = useState<SortColumn>('created_at');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('DESC');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
@@ -121,7 +119,7 @@ export function CustomerTable() {
 
   // Sort handler
   const handleSort = useCallback(
-    (column: 'created_at' | 'full_name') => {
+    (column: SortColumn) => {
       if (sortBy === column) {
         setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
       } else {
@@ -186,7 +184,7 @@ export function CustomerTable() {
 
   // Sort icon — shows direction on active column, ↕ on inactive
   const sortIcon = useCallback(
-    (column: 'created_at' | 'full_name') => {
+    (column: SortColumn) => {
       if (sortBy !== column) {
         return <ArrowUpDown className="ml-1 inline h-3 w-3 text-muted-foreground" />;
       }
@@ -364,7 +362,7 @@ export function CustomerTable() {
                     <TableCell>{customer.national_id ?? '—'}</TableCell>
                   )}
                   {isInternal && (
-                    <TableCell className="max-w-[200px] truncate">
+                    <TableCell className="max-w-50 truncate">
                       {customer.internal_notes ?? '—'}
                     </TableCell>
                   )}
