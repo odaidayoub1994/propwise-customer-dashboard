@@ -13,8 +13,8 @@ export function AdminToggle() {
       onClick={toggle}
       className={
         isInternal
-          ? 'bg-amber-500 text-white hover:bg-amber-600'
-          : undefined
+          ? 'bg-amber-500 text-white transition-colors duration-200 hover:bg-amber-600'
+          : 'transition-colors duration-200'
       }
     >
       {isInternal ? (
