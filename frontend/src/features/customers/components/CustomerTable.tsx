@@ -1,17 +1,25 @@
-'use client';
+"use client";
 
-import { useCallback, useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, ArrowUpDown, MoreHorizontal, Plus, Trash2, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useCallback, useMemo, useState } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -19,33 +27,37 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { AdminToggle } from '@/components/AdminToggle';
-import { Pagination } from '@/components/Pagination';
-import { useAdminMode } from '@/context/AdminContext';
-import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { useCustomers } from '@/features/customers/hooks/useCustomers';
+} from "@/components/ui/table";
+import { AdminToggle } from "@/components/AdminToggle";
+import { Pagination } from "@/components/Pagination";
+import { useAdminMode } from "@/context/AdminContext";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useCustomers } from "@/features/customers/hooks/useCustomers";
 import {
   useDeleteCustomer,
   useBulkDeleteCustomers,
-} from '@/features/customers/hooks/useCustomerMutations';
-import { SearchBar } from '@/features/customers/components/SearchBar';
-import { CustomerFormModal } from '@/features/customers/components/CustomerFormModal';
-import { DeleteConfirmModal } from '@/features/customers/components/DeleteConfirmModal';
-import { ToastNotifications } from '@/features/customers/components/ToastNotifications';
-import type { Customer, SortColumn, SortOrder } from '@/features/customers/types';
+} from "@/features/customers/hooks/useCustomerMutations";
+import { SearchBar } from "@/features/customers/components/SearchBar";
+import { CustomerFormModal } from "@/features/customers/components/CustomerFormModal";
+import { DeleteConfirmModal } from "@/features/customers/components/DeleteConfirmModal";
+import { ToastNotifications } from "@/features/customers/components/ToastNotifications";
+import type {
+  Customer,
+  SortColumn,
+  SortOrder,
+} from "@/features/customers/types";
 
 export function CustomerTable() {
   const { isInternal } = useAdminMode();
 
   // Pagination & filtering state
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
-  const [sortBy, setSortBy] = useState<SortColumn>('created_at');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('DESC');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [sortBy, setSortBy] = useState<SortColumn>("created_at");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("DESC");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -71,8 +83,7 @@ export function CustomerTable() {
 
   const customers = useMemo(() => data?.data ?? [], [data?.data]);
   const meta = data?.meta;
-  const isMutating =
-    deleteMutation.isPending || bulkDeleteMutation.isPending;
+  const isMutating = deleteMutation.isPending || bulkDeleteMutation.isPending;
 
   // Selection helpers
   const allSelected =
@@ -103,16 +114,19 @@ export function CustomerTable() {
   }, []);
 
   // Date filter handlers
-  const handleDateChange = useCallback((field: 'from' | 'to', value: string) => {
-    if (field === 'from') setDateFrom(value);
-    else setDateTo(value);
-    setPage(1);
-    setSelectedIds(new Set());
-  }, []);
+  const handleDateChange = useCallback(
+    (field: "from" | "to", value: string) => {
+      if (field === "from") setDateFrom(value);
+      else setDateTo(value);
+      setPage(1);
+      setSelectedIds(new Set());
+    },
+    [],
+  );
 
   const clearDateFilters = useCallback(() => {
-    setDateFrom('');
-    setDateTo('');
+    setDateFrom("");
+    setDateTo("");
     setPage(1);
     setSelectedIds(new Set());
   }, []);
@@ -121,10 +135,10 @@ export function CustomerTable() {
   const handleSort = useCallback(
     (column: SortColumn) => {
       if (sortBy === column) {
-        setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
+        setSortOrder((prev) => (prev === "ASC" ? "DESC" : "ASC"));
       } else {
         setSortBy(column);
-        setSortOrder(column === 'full_name' ? 'ASC' : 'DESC');
+        setSortOrder(column === "full_name" ? "ASC" : "DESC");
       }
       setPage(1);
       setSelectedIds(new Set());
@@ -186,11 +200,15 @@ export function CustomerTable() {
   const sortIcon = useCallback(
     (column: SortColumn) => {
       if (sortBy !== column) {
-        return <ArrowUpDown className="ml-1 inline h-3 w-3 text-muted-foreground" />;
+        return (
+          <ArrowUpDown className="ml-1 inline h-3 w-3 text-muted-foreground" />
+        );
       }
-      return sortOrder === 'ASC'
-        ? <ArrowUp className="ml-1 inline h-3 w-3" />
-        : <ArrowDown className="ml-1 inline h-3 w-3" />;
+      return sortOrder === "ASC" ? (
+        <ArrowUp className="ml-1 inline h-3 w-3 text-primary" />
+      ) : (
+        <ArrowDown className="ml-1 inline h-3 w-3 text-primary" />
+      );
     },
     [sortBy, sortOrder],
   );
@@ -198,10 +216,10 @@ export function CustomerTable() {
   // Format date for display
   const formatDate = useMemo(
     () => (dateStr: string) =>
-      new Date(dateStr).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
+      new Date(dateStr).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
       }),
     [],
   );
@@ -226,29 +244,38 @@ export function CustomerTable() {
       {/* Date range filter */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="date-from" className="text-xs text-muted-foreground">From</Label>
+          <Label htmlFor="date-from" className="text-xs text-muted-foreground">
+            From
+          </Label>
           <Input
             id="date-from"
             type="date"
             value={dateFrom}
-            onChange={(e) => handleDateChange('from', e.target.value)}
+            onChange={(e) => handleDateChange("from", e.target.value)}
             max={dateTo || undefined}
             className="w-40"
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="date-to" className="text-xs text-muted-foreground">To</Label>
+          <Label htmlFor="date-to" className="text-xs text-muted-foreground">
+            To
+          </Label>
           <Input
             id="date-to"
             type="date"
             value={dateTo}
-            onChange={(e) => handleDateChange('to', e.target.value)}
+            onChange={(e) => handleDateChange("to", e.target.value)}
             min={dateFrom || undefined}
             className="w-40"
           />
         </div>
         {(dateFrom || dateTo) && (
-          <Button variant="ghost" size="sm" onClick={clearDateFilters} className="text-muted-foreground">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearDateFilters}
+            className="text-muted-foreground"
+          >
             <X className="mr-1 h-3 w-3" />
             Clear dates
           </Button>
@@ -278,18 +305,15 @@ export function CustomerTable() {
           <TableHeader>
             <TableRow>
               <TableHead>
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={toggleAll}
-                />
+                <Checkbox checked={allSelected} onCheckedChange={toggleAll} />
               </TableHead>
               <TableHead>
                 <button
                   type="button"
                   className="font-medium hover:underline"
-                  onClick={() => handleSort('full_name')}
+                  onClick={() => handleSort("full_name")}
                 >
-                  Name{sortIcon('full_name')}
+                  Name{sortIcon("full_name")}
                 </button>
               </TableHead>
               <TableHead>Email</TableHead>
@@ -300,9 +324,9 @@ export function CustomerTable() {
                 <button
                   type="button"
                   className="font-medium hover:underline"
-                  onClick={() => handleSort('created_at')}
+                  onClick={() => handleSort("created_at")}
                 >
-                  Created{sortIcon('created_at')}
+                  Created{sortIcon("created_at")}
                 </button>
               </TableHead>
               <TableHead className="w-10" />
@@ -344,7 +368,7 @@ export function CustomerTable() {
                 <TableRow
                   key={customer.id}
                   data-state={
-                    selectedIds.has(customer.id) ? 'selected' : undefined
+                    selectedIds.has(customer.id) ? "selected" : undefined
                   }
                 >
                   <TableCell>
@@ -359,11 +383,11 @@ export function CustomerTable() {
                   <TableCell>{customer.email}</TableCell>
                   <TableCell>{customer.phone_number}</TableCell>
                   {isInternal && (
-                    <TableCell>{customer.national_id ?? '—'}</TableCell>
+                    <TableCell>{customer.national_id ?? "—"}</TableCell>
                   )}
                   {isInternal && (
                     <TableCell className="max-w-50 truncate">
-                      {customer.internal_notes ?? '—'}
+                      {customer.internal_notes ?? "—"}
                     </TableCell>
                   )}
                   <TableCell>{formatDate(customer.created_at)}</TableCell>
