@@ -31,16 +31,17 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
   const pages = getPageNumbers(page, totalPages);
 
   return (
-    <div className="flex items-center justify-between">
-      <p className="text-sm text-muted-foreground">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-center text-sm text-muted-foreground sm:text-left">
         Page {page} of {totalPages}
       </p>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-center gap-1.5">
         <Button
           variant="outline"
           size="icon"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
+          aria-label="Previous page"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -55,6 +56,8 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
               variant={p === page ? 'default' : 'outline'}
               size="icon"
               onClick={() => onPageChange(p)}
+              aria-label={`Page ${p}`}
+              aria-current={p === page ? 'page' : undefined}
             >
               {p}
             </Button>
@@ -65,6 +68,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
           size="icon"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
+          aria-label="Next page"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
