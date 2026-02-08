@@ -1,5 +1,6 @@
 import fetcher from '@/lib/fetcher';
 import type {
+  BulkDeleteResponse,
   Customer,
   CustomerQuery,
   PaginatedResponse,
@@ -61,8 +62,8 @@ export async function deleteCustomer(id: string): Promise<{ id: string }> {
 
 export async function bulkDeleteCustomers(
   ids: string[],
-): Promise<{ ids: string[] }> {
-  const { data } = await fetcher.delete<{ ids: string[] }>('/customers', {
+): Promise<BulkDeleteResponse> {
+  const { data } = await fetcher.delete<BulkDeleteResponse>('/customers', {
     data: { ids },
   });
   return data;

@@ -22,6 +22,11 @@ export interface PaginatedResponse<T> {
 export type SortColumn = 'created_at' | 'full_name';
 export type SortOrder = 'ASC' | 'DESC';
 
+export interface BulkDeleteResponse {
+  ids: string[];
+  deletedCount: number;
+}
+
 export interface CustomerQuery {
   page?: number;
   limit?: number;

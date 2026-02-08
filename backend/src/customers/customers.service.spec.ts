@@ -545,12 +545,12 @@ describe('CustomersService', () => {
   });
 
   describe('bulkDelete', () => {
-    it('should delete multiple customers, invalidate caches, and return { ids }', async () => {
+    it('should delete multiple customers, invalidate caches, and return ids with deletedCount', async () => {
       mockRepository.delete.mockResolvedValue({ affected: 2 });
 
       const result = await service.bulkDelete(['uuid-1', 'uuid-2']);
 
-      expect(result).toEqual({ ids: ['uuid-1', 'uuid-2'] });
+      expect(result).toEqual({ ids: ['uuid-1', 'uuid-2'], deletedCount: 2 });
       expect(mockRepository.delete).toHaveBeenCalled();
       expect(mockCacheService.increment).toHaveBeenCalledWith(
         'customers:list:version',
@@ -566,12 +566,12 @@ describe('CustomersService', () => {
       });
     });
 
-    it('should handle empty ids array and return { ids: [] }', async () => {
+    it('should handle empty ids array and return ids with deletedCount 0', async () => {
       mockRepository.delete.mockResolvedValue({ affected: 0 });
 
       const result = await service.bulkDelete([]);
 
-      expect(result).toEqual({ ids: [] });
+      expect(result).toEqual({ ids: [], deletedCount: 0 });
       expect(mockRepository.delete).toHaveBeenCalled();
       expect(mockCacheService.deleteKeys).not.toHaveBeenCalled();
       expect(mockGateway.emit).toHaveBeenCalledWith('customers.bulk_deleted', {

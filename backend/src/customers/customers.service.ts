@@ -220,14 +220,17 @@ export class CustomersService {
   }
 
   async bulkDelete(ids: string[]) {
-    await this.repo.delete({ id: In(ids) });
+    const result = await this.repo.delete({ id: In(ids) });
+    const deletedCount = result.affected ?? 0;
 
-    this.logger.log(`[CustomersService] Bulk deleted ${ids.length} customers`);
+    this.logger.log(
+      `[CustomersService] Bulk deleted ${deletedCount}/${ids.length} customers`,
+    );
 
     await this.invalidateCaches(ids.length > 0 ? ids : undefined);
 
     this.socketService.emit('customers.bulk_deleted', { ids });
 
-    return { ids };
+    return { ids, deletedCount };
   }
 }
