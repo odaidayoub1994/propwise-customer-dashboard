@@ -32,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AdminToggle } from "@/components/AdminToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Pagination } from "@/components/Pagination";
 import { useAdminMode } from "@/context/AdminContext";
 import { useCustomers } from "@/features/customers/hooks/useCustomers";
@@ -192,6 +193,7 @@ export function CustomerTable() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <AdminToggle />
           <Button onClick={openCreateModal} disabled={isMutating}>
             <Plus className="mr-2 h-4 w-4" />
