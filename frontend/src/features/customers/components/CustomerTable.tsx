@@ -31,6 +31,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { AdminToggle } from "@/components/AdminToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Pagination } from "@/components/Pagination";
@@ -406,8 +411,21 @@ export function CustomerTable() {
                     </TableCell>
                   )}
                   {isInternal && (
-                    <TableCell className="hidden max-w-50 truncate md:table-cell">
-                      {customer.internal_notes ?? "—"}
+                    <TableCell className="hidden max-w-xs md:table-cell">
+                      {customer.internal_notes ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="block truncate">
+                              {customer.internal_notes}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-sm">
+                            {customer.internal_notes}
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
                   )}
                   <TableCell>{formatDate(customer.created_at)}</TableCell>
