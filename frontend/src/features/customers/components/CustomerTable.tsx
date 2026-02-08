@@ -31,8 +31,9 @@ import {
 import { AdminToggle } from "@/components/AdminToggle";
 import { Pagination } from "@/components/Pagination";
 import { useAdminMode } from "@/context/AdminContext";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useCustomers } from "@/features/customers/hooks/useCustomers";
+import { useCustomerFilters } from "@/features/customers/hooks/useCustomerFilters";
+import { DEFAULT_LIMIT } from "@/features/customers/constants";
 import {
   useDeleteCustomer,
   useBulkDeleteCustomers,
@@ -41,26 +42,39 @@ import { SearchBar } from "@/features/customers/components/SearchBar";
 import { CustomerFormModal } from "@/features/customers/components/CustomerFormModal";
 import { DeleteConfirmModal } from "@/features/customers/components/DeleteConfirmModal";
 import { ToastNotifications } from "@/features/customers/components/ToastNotifications";
-import type {
-  Customer,
-  SortColumn,
-  SortOrder,
-} from "@/features/customers/types";
+import type { Customer, SortColumn } from "@/features/customers/types";
+
+// Format date for display
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 export function CustomerTable() {
   const { isInternal } = useAdminMode();
 
-  // Pagination & filtering state
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebouncedValue(search, 300);
-  const [sortBy, setSortBy] = useState<SortColumn>("created_at");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("DESC");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-
   // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+
+  // Filter/sort/pagination state
+  const {
+    page,
+    search,
+    debouncedSearch,
+    sortBy,
+    sortOrder,
+    dateFrom,
+    dateTo,
+    handleSearchChange,
+    handleDateChange,
+    clearDateFilters,
+    handleSort,
+    handlePageChange,
+  } = useCustomerFilters(clearSelection);
 
   // Modal state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -71,7 +85,7 @@ export function CustomerTable() {
   // Data hooks
   const { data, isLoading, isError } = useCustomers({
     page,
-    limit: 20,
+    limit: DEFAULT_LIMIT,
     q: debouncedSearch || undefined,
     sort_by: sortBy,
     sort_order: sortOrder,
@@ -105,52 +119,6 @@ export function CustomerTable() {
       return new Set(customers.map((c) => c.id));
     });
   }, [customers]);
-
-  // Search handler — reset page on new search
-  const handleSearchChange = useCallback((value: string) => {
-    setSearch(value);
-    setPage(1);
-    setSelectedIds(new Set());
-  }, []);
-
-  // Date filter handlers
-  const handleDateChange = useCallback(
-    (field: "from" | "to", value: string) => {
-      if (field === "from") setDateFrom(value);
-      else setDateTo(value);
-      setPage(1);
-      setSelectedIds(new Set());
-    },
-    [],
-  );
-
-  const clearDateFilters = useCallback(() => {
-    setDateFrom("");
-    setDateTo("");
-    setPage(1);
-    setSelectedIds(new Set());
-  }, []);
-
-  // Sort handler
-  const handleSort = useCallback(
-    (column: SortColumn) => {
-      if (sortBy === column) {
-        setSortOrder((prev) => (prev === "ASC" ? "DESC" : "ASC"));
-      } else {
-        setSortBy(column);
-        setSortOrder(column === "full_name" ? "ASC" : "DESC");
-      }
-      setPage(1);
-      setSelectedIds(new Set());
-    },
-    [sortBy],
-  );
-
-  // Page change — clear selection
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage);
-    setSelectedIds(new Set());
-  }, []);
 
   // Modal handlers
   const openCreateModal = useCallback(() => {
@@ -211,17 +179,6 @@ export function CustomerTable() {
       );
     },
     [sortBy, sortOrder],
-  );
-
-  // Format date for display
-  const formatDate = useMemo(
-    () => (dateStr: string) =>
-      new Date(dateStr).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      }),
-    [],
   );
 
   return (

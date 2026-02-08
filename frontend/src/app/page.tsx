@@ -6,6 +6,7 @@ import {
 import { makeQueryClient } from '@/lib/react-query';
 import { fetchCustomers } from '@/features/customers/api';
 import { customerKeys } from '@/features/customers/keys';
+import { DEFAULT_QUERY } from '@/features/customers/constants';
 import { CustomerTable } from '@/features/customers/components/CustomerTable';
 
 export default async function HomePage() {
@@ -13,17 +14,10 @@ export default async function HomePage() {
 
   await queryClient.prefetchQuery({
     queryKey: customerKeys.list({
-      page: 1,
-      limit: 20,
-      sort_by: 'created_at',
-      sort_order: 'DESC',
+      ...DEFAULT_QUERY,
       isInternal: false,
     }),
-    queryFn: () =>
-      fetchCustomers(
-        { page: 1, limit: 20, sort_by: 'created_at', sort_order: 'DESC' },
-        false,
-      ),
+    queryFn: () => fetchCustomers(DEFAULT_QUERY, false),
   });
 
   return (
