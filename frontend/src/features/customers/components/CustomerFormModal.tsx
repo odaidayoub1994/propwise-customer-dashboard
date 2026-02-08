@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -73,30 +74,39 @@ function CustomerForm({
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
       <div className="grid gap-2">
-        <Label htmlFor="full_name">Full Name</Label>
+        <Label htmlFor="full_name">
+          Full Name <span className="text-destructive">*</span>
+        </Label>
         <Input
           id="full_name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
+          placeholder="John Smith"
           required
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">
+          Email <span className="text-destructive">*</span>
+        </Label>
         <Input
           id="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          placeholder="john@example.com"
           required
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="phone_number">Phone Number</Label>
+        <Label htmlFor="phone_number">
+          Phone Number <span className="text-destructive">*</span>
+        </Label>
         <Input
           id="phone_number"
           value={phoneNumber}
           onChange={(e) => setPhoneNumber(e.target.value)}
+          placeholder="+962791234567"
           required
         />
       </div>
@@ -126,6 +136,7 @@ function CustomerForm({
           Cancel
         </Button>
         <Button type="submit" disabled={isPending}>
+          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isPending ? 'Saving...' : isEditing ? 'Update' : 'Create'}
         </Button>
       </DialogFooter>
