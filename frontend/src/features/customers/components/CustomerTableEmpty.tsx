@@ -40,12 +40,17 @@ export function CustomerTableEmpty({
   if (isError) {
     return (
       <TableRow>
-        <TableCell colSpan={colSpan} className="h-32 text-center">
-          <div className="flex flex-col items-center gap-2">
-            <AlertCircle className="h-8 w-8 text-destructive" />
-            <p className="text-sm text-destructive">
-              Failed to load customers.
-            </p>
+        <TableCell colSpan={colSpan} className="h-48 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="rounded-full bg-destructive/10 p-3">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Failed to load customers</p>
+              <p className="text-xs text-muted-foreground">
+                Something went wrong. Please try again.
+              </p>
+            </div>
             <Button variant="outline" size="sm" onClick={onRetry}>
               Retry
             </Button>
@@ -57,23 +62,33 @@ export function CustomerTableEmpty({
 
   return (
     <TableRow>
-      <TableCell colSpan={colSpan} className="h-32 text-center">
+      <TableCell colSpan={colSpan} className="h-48 text-center">
         {hasActiveFilters ? (
-          <div className="flex flex-col items-center gap-2">
-            <SearchX className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              No customers match your filters.
-            </p>
+          <div className="flex flex-col items-center gap-3">
+            <div className="rounded-full bg-muted p-3">
+              <SearchX className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">No results found</p>
+              <p className="text-xs text-muted-foreground">
+                No customers match your current filters.
+              </p>
+            </div>
             <Button variant="outline" size="sm" onClick={onClearFilters}>
               Clear filters
             </Button>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2">
-            <Users className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              No customers yet. Click &quot;Add Customer&quot; to get started.
-            </p>
+          <div className="flex flex-col items-center gap-3">
+            <div className="rounded-full bg-muted p-3">
+              <Users className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">No customers yet</p>
+              <p className="text-xs text-muted-foreground">
+                Get started by adding your first customer.
+              </p>
+            </div>
           </div>
         )}
       </TableCell>

@@ -179,10 +179,10 @@ export function CustomerTable() {
       />
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-md border">
+      <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead>
                 <Checkbox
                   checked={allSelected}
@@ -256,6 +256,8 @@ export function CustomerTable() {
         <Pagination
           page={meta.page}
           totalPages={meta.totalPages}
+          total={meta.total}
+          limit={meta.limit}
           onPageChange={handlePageChange}
         />
       )}

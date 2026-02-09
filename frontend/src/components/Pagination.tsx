@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 interface PaginationProps {
   page: number;
   totalPages: number;
+  total?: number;
+  limit?: number;
   onPageChange: (page: number) => void;
 }
 
@@ -25,20 +27,25 @@ function getPageNumbers(page: number, totalPages: number): (number | '...')[] {
   return [1, '...', page - 1, page, page + 1, '...', totalPages];
 }
 
-export function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
+export function Pagination({ page, totalPages, total, limit, onPageChange }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   const pages = getPageNumbers(page, totalPages);
 
+  const rangeStart = total && limit ? (page - 1) * limit + 1 : undefined;
+  const rangeEnd = total && limit ? Math.min(page * limit, total) : undefined;
+
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-center text-sm text-muted-foreground sm:text-left">
-        Page {page} of {totalPages}
+        {rangeStart !== undefined && rangeEnd !== undefined && total !== undefined
+          ? `Showing ${rangeStart}\u2013${rangeEnd} of ${total}`
+          : `Page ${page} of ${totalPages}`}
       </p>
-      <div className="flex items-center justify-center gap-1.5">
+      <div className="flex items-center justify-center gap-1">
         <Button
-          variant="outline"
-          size="icon"
+          variant="ghost"
+          size="icon-sm"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           aria-label="Previous page"
@@ -47,14 +54,14 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
         </Button>
         {pages.map((p, i) =>
           p === '...' ? (
-            <span key={`ellipsis-${i}`} className="px-2 text-sm text-muted-foreground">
+            <span key={`ellipsis-${i}`} className="px-1.5 text-sm text-muted-foreground">
               ...
             </span>
           ) : (
             <Button
               key={p}
-              variant={p === page ? 'default' : 'outline'}
-              size="icon"
+              variant={p === page ? 'default' : 'ghost'}
+              size="icon-sm"
               onClick={() => onPageChange(p)}
               aria-label={`Page ${p}`}
               aria-current={p === page ? 'page' : undefined}
@@ -64,8 +71,8 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
           ),
         )}
         <Button
-          variant="outline"
-          size="icon"
+          variant="ghost"
+          size="icon-sm"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
           aria-label="Next page"
