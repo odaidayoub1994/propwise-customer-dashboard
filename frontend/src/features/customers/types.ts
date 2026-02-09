@@ -9,23 +9,10 @@ export interface Customer {
   updated_at: string;
 }
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+export type { PaginatedResponse, BulkDeleteResponse } from '@/types/api';
 
 export type SortColumn = 'created_at' | 'full_name';
 export type SortOrder = 'ASC' | 'DESC';
-
-export interface BulkDeleteResponse {
-  ids: string[];
-  deletedCount: number;
-}
 
 export interface CustomerQuery {
   page?: number;
