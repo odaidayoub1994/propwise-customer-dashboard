@@ -1,36 +1,15 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import {
-  AlertCircle,
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  Plus,
-  SearchX,
-  Trash2,
-  Users,
-  X,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { AdminToggle } from "@/components/AdminToggle";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Pagination } from "@/components/Pagination";
 import { useAdminMode } from "@/context/AdminContext";
 import { useCustomers } from "@/features/customers/hooks/useCustomers";
@@ -44,16 +23,12 @@ import { SearchBar } from "@/features/customers/components/SearchBar";
 import { CustomerFormModal } from "@/features/customers/components/CustomerFormModal";
 import { DeleteConfirmModal } from "@/features/customers/components/DeleteConfirmModal";
 import { ToastNotifications } from "@/features/customers/components/ToastNotifications";
+import { CustomerPageHeader } from "@/features/customers/components/CustomerPageHeader";
+import { DateRangeFilter } from "@/features/customers/components/DateRangeFilter";
+import { BulkActionBar } from "@/features/customers/components/BulkActionBar";
+import { CustomerRow } from "@/features/customers/components/CustomerRow";
+import { CustomerTableEmpty } from "@/features/customers/components/CustomerTableEmpty";
 import type { Customer, SortColumn } from "@/features/customers/types";
-
-// Format date for display
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 export function CustomerTable() {
   const { isInternal } = useAdminMode();
@@ -107,6 +82,7 @@ export function CustomerTable() {
 
   const customers = useMemo(() => data?.data ?? [], [data?.data]);
   const meta = data?.meta;
+  const colSpan = isInternal ? 8 : 6;
 
   // Selection helpers
   const allSelected =
@@ -191,82 +167,23 @@ export function CustomerTable() {
     [sortBy, sortOrder],
   );
 
+  const showRows = !isLoading && !isError && customers.length > 0;
+
   return (
     <div className="mx-auto max-w-7xl space-y-4 p-4 sm:p-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold">Customers</h1>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <AdminToggle />
-          <Button onClick={openCreateModal}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Customer
-          </Button>
-        </div>
-      </div>
-
-      {/* Search */}
+      <CustomerPageHeader onAddCustomer={openCreateModal} />
       <SearchBar value={search} onChange={handleSearchChange} hint={searchHint} />
-
-      {/* Date range filter */}
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="date-from" className="text-xs text-muted-foreground">
-            From
-          </Label>
-          <Input
-            id="date-from"
-            type="date"
-            value={dateFrom}
-            onChange={(e) => handleDateChange("from", e.target.value)}
-            max={dateTo || undefined}
-            className="w-full sm:w-40"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="date-to" className="text-xs text-muted-foreground">
-            To
-          </Label>
-          <Input
-            id="date-to"
-            type="date"
-            value={dateTo}
-            onChange={(e) => handleDateChange("to", e.target.value)}
-            min={dateFrom || undefined}
-            className="w-full sm:w-40"
-          />
-        </div>
-        {(dateFrom || dateTo) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearDateFilters}
-            className="text-muted-foreground"
-          >
-            <X className="mr-1 h-3 w-3" />
-            Clear dates
-          </Button>
-        )}
-      </div>
-
-      {/* Bulk action bar */}
-      {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 rounded-md bg-muted p-3 transition-all duration-200">
-          <span className="text-sm font-medium">
-            {selectedIds.size} selected
-          </span>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => openDeleteModal(Array.from(selectedIds))}
-            disabled={bulkDeleteMutation.isPending}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Selected
-          </Button>
-        </div>
-      )}
+      <DateRangeFilter
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateChange={handleDateChange}
+        onClear={clearDateFilters}
+      />
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        onDelete={() => openDeleteModal(Array.from(selectedIds))}
+        isPending={bulkDeleteMutation.isPending}
+      />
 
       {/* Table */}
       <div className="overflow-x-auto rounded-md border">
@@ -316,146 +233,32 @@ export function CustomerTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  {Array.from({
-                    length: isInternal ? 8 : 6,
-                  }).map((__, j) => (
-                    <TableCell key={j}>
-                      <div className="h-4 animate-pulse rounded bg-muted" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : isError ? (
-              <TableRow>
-                <TableCell
-                  colSpan={isInternal ? 8 : 6}
-                  className="h-32 text-center"
-                >
-                  <div className="flex flex-col items-center gap-2">
-                    <AlertCircle className="h-8 w-8 text-destructive" />
-                    <p className="text-sm text-destructive">
-                      Failed to load customers.
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => refetch()}
-                    >
-                      Retry
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : customers.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={isInternal ? 8 : 6}
-                  className="h-32 text-center"
-                >
-                  {hasActiveFilters ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <SearchX className="h-8 w-8 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        No customers match your filters.
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={clearAllFilters}
-                      >
-                        Clear filters
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <Users className="h-8 w-8 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        No customers yet. Click &quot;Add Customer&quot; to get
-                        started.
-                      </p>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-            ) : (
+            {showRows ? (
               customers.map((customer) => (
-                <TableRow
+                <CustomerRow
                   key={customer.id}
-                  data-state={
-                    selectedIds.has(customer.id) ? "selected" : undefined
-                  }
-                  className={`transition-colors duration-150${selectedIds.has(customer.id) ? " bg-muted/50" : ""}`}
-                >
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.has(customer.id)}
-                      onCheckedChange={() => toggleOne(customer.id)}
-                      aria-label={`Select ${customer.full_name}`}
-                    />
-                  </TableCell>
-                  <TableCell className="min-w-0 font-medium">
-                    {customer.full_name}
-                  </TableCell>
-                  <TableCell className="min-w-0">
-                    {customer.email}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {customer.phone_number}
-                  </TableCell>
-                  {isInternal && (
-                    <TableCell className="hidden md:table-cell">
-                      {customer.national_id ?? "—"}
-                    </TableCell>
-                  )}
-                  {isInternal && (
-                    <TableCell className="hidden max-w-xs md:table-cell">
-                      {customer.internal_notes ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="block truncate">
-                              {customer.internal_notes}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-sm">
-                            {customer.internal_notes}
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                  )}
-                  <TableCell>{formatDate(customer.created_at)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditModal(customer)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => openDeleteModal([customer.id])}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                  customer={customer}
+                  isSelected={selectedIds.has(customer.id)}
+                  isInternal={isInternal}
+                  onToggleSelect={toggleOne}
+                  onEdit={openEditModal}
+                  onDelete={(id) => openDeleteModal([id])}
+                />
               ))
+            ) : (
+              <CustomerTableEmpty
+                isLoading={isLoading}
+                isError={isError}
+                hasActiveFilters={hasActiveFilters}
+                colSpan={colSpan}
+                onRetry={() => refetch()}
+                onClearFilters={clearAllFilters}
+              />
             )}
           </TableBody>
         </Table>
       </div>
 
-      {/* Pagination */}
       {meta && (
         <Pagination
           page={meta.page}
@@ -464,7 +267,6 @@ export function CustomerTable() {
         />
       )}
 
-      {/* Modals */}
       <CustomerFormModal
         open={isFormOpen}
         onClose={closeFormModal}
@@ -478,7 +280,6 @@ export function CustomerTable() {
         isPending={deleteMutation.isPending || bulkDeleteMutation.isPending}
       />
 
-      {/* Socket event listener */}
       <ToastNotifications />
     </div>
   );
