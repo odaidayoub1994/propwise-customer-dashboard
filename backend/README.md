@@ -37,16 +37,20 @@ src/
 ├── config/
 │   ├── env.config.ts                          Centralized env var parsing (fail-fast)
 │   ├── database.config.ts                     TypeORM DataSource configuration
+│   ├── data-source.ts                         Standalone DataSource for TypeORM CLI (migrations)
 │   └── logger.ts                              Winston format configuration
+├── migrations/
+│   └── <timestamp>-InitialSchema.ts           Initial schema migration (customers + indexes)
 ├── customers/
 │   ├── customers.module.ts                    Module definition
 │   ├── customers.controller.ts                REST endpoints
 │   ├── customers.service.ts                   Business logic + Redis caching
 │   ├── dto/
-│   │   ├── create-customer.dto.ts             Create validation rules
+│   │   ├── create-customer.dto.ts             Create validation rules (user-friendly messages)
 │   │   ├── update-customer.dto.ts             Partial update (PartialType)
 │   │   ├── query-customer.dto.ts              Pagination, search, sort, date filter params
-│   │   └── bulk-delete.dto.ts                 Bulk delete validation (UUID array)
+│   │   ├── bulk-delete.dto.ts                 Bulk delete validation (UUID array)
+│   │   └── customer-response.dto.ts           Swagger response DTOs (typed API responses)
 │   ├── entities/
 │   │   └── customer.entity.ts                 TypeORM entity definition
 │   ├── interceptors/
@@ -86,7 +90,9 @@ Every `.ts` file has a corresponding `.spec.ts` test file (omitted for brevity).
 
 All endpoints accept an `x-internal: true` header. When present, responses include sensitive fields (`national_id`, `internal_notes`) and write operations accept them.
 
-Swagger docs: [http://localhost:4000/api/docs](http://localhost:4000/api/docs)
+Swagger docs: [http://localhost:4000/api/docs](http://localhost:4000/api/docs) — all endpoints include typed response schemas (`CustomerResponseDto`, `PaginatedCustomerResponseDto`, `DeleteResponseDto`, `BulkDeleteResponseDto`) and the `x-internal` header is documented at the controller level.
+
+All DTOs return user-friendly validation error messages (e.g., "Please provide a valid email address", "Limit cannot exceed 50").
 
 ## Sensitive Data Protection
 
@@ -127,6 +133,37 @@ The global `AllExceptionsFilter` provides consistent error responses:
 - Returns a consistent shape: `{ statusCode, message, error, timestamp, path }`
 - Never exposes stack traces or SQL queries to the client
 
+## Database Indexes
+
+B-tree indexes are defined on frequently queried columns:
+
+| Column | Purpose |
+|--------|---------|
+| `full_name` | Optimizes `ORDER BY full_name` sorting queries |
+| `email` | Implicit index via `UNIQUE` constraint — optimizes lookups and duplicate checks |
+| `created_at` | Optimizes `ORDER BY created_at` sorting and `BETWEEN`/`>=`/`<=` date range filtering |
+
+> **Note:** B-tree indexes don't accelerate `%pattern%` ILIKE searches — that would require `pg_trgm`. At dashboard scale, the sequential scan for ILIKE is acceptable.
+
+## Database Migrations
+
+The project uses TypeORM migrations instead of `synchronize: true` for production-safe schema management.
+
+- Migrations run automatically on app startup (`migrationsRun: true` in `database.config.ts`)
+- The CLI DataSource is defined in `src/config/data-source.ts` (standalone, no NestJS DI)
+- Migration files live in `src/migrations/`
+
+```bash
+# Generate a migration after entity changes (compares entities vs current DB schema)
+pnpm run migration:generate src/migrations/MigrationName
+
+# Run pending migrations manually
+pnpm run migration:run
+
+# Revert the last executed migration
+pnpm run migration:revert
+```
+
 ## Logging
 
 Winston with nest-winston provides structured logging:
@@ -166,6 +203,9 @@ Testing pattern: `@nestjs/testing` `Test.createTestingModule()` with all externa
 | `pnpm run test:cov` | Tests with coverage report |
 | `pnpm run test:e2e` | End-to-end tests |
 | `pnpm run seed` | Seed database with 50 sample customers |
+| `pnpm run migration:generate` | Generate a migration from entity changes |
+| `pnpm run migration:run` | Run pending migrations |
+| `pnpm run migration:revert` | Revert the last migration |
 
 ## Environment Variables
 

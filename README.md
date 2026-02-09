@@ -20,10 +20,11 @@ Full-stack Customer Activity Dashboard built with NestJS, Next.js, PostgreSQL, R
 ```
 propwise-customer-dashboard/
 ├── backend/src/
-│   ├── config/              env, database, logger configuration
+│   ├── config/              env, database, logger, TypeORM CLI data-source
+│   ├── migrations/          TypeORM database migrations
 │   ├── customers/
-│   │   ├── dto/             create, update, query, bulk-delete DTOs
-│   │   ├── entities/        TypeORM Customer entity
+│   │   ├── dto/             create, update, query, bulk-delete, response DTOs
+│   │   ├── entities/        TypeORM Customer entity (indexed)
 │   │   ├── interceptors/    sensitive field stripping
 │   │   ├── types/           socket event payload types
 │   │   └── utils/           isInternalRequest, stripSensitive, escapeIlike
@@ -42,7 +43,8 @@ propwise-customer-dashboard/
 │   ├── lib/                 Axios fetcher, QueryClient factory, error helpers, query key factory
 │   ├── types/               Shared API types (PaginatedResponse, BulkDeleteResponse)
 │   └── config/              env config
-├── docker-compose.yml
+├── docker-compose.yml       production Docker stack
+├── docker-compose.dev.yml   dev override (hot-reload, volume mounts)
 └── package.json             root monorepo scripts
 ```
 
@@ -75,11 +77,18 @@ cd backend && pnpm install && pnpm run seed && pnpm run start:dev
 cd frontend && pnpm install && pnpm run dev
 ```
 
-**Full Docker stack** (all services):
+**Full Docker stack — production** (all services):
 ```bash
 pnpm run docker:up      # Backend on :4000, Frontend on :3000
 pnpm run docker:build   # Rebuild after code changes
 ```
+
+**Full Docker stack — development** (hot-reload with volume mounts):
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+Both Dockerfiles use multi-stage builds with `dev` and `production` targets. Production images run as non-root users and include only production dependencies.
 
 ## Available Scripts
 
@@ -121,7 +130,7 @@ Per-package scripts are documented in each package's README ([backend](./backend
 
 All endpoints accept an `x-internal: true` header for admin mode, which reveals sensitive fields (`national_id`, `internal_notes`).
 
-Swagger docs available at [http://localhost:4000/api/docs](http://localhost:4000/api/docs).
+Swagger docs available at [http://localhost:4000/api/docs](http://localhost:4000/api/docs) — all endpoints include typed response schemas and the `x-internal` header documentation. Validation errors return user-friendly messages (e.g., "Please provide a valid email address").
 
 ## Database Schema
 
@@ -130,13 +139,34 @@ Swagger docs available at [http://localhost:4000/api/docs](http://localhost:4000
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
 | `id` | UUID | PK, auto-generated | |
-| `full_name` | varchar(255) | NOT NULL | |
-| `email` | varchar(255) | UNIQUE, NOT NULL | |
+| `full_name` | varchar(255) | NOT NULL, **indexed** | B-tree index for ORDER BY sorting |
+| `email` | varchar(255) | UNIQUE, NOT NULL | Unique constraint creates implicit index |
 | `phone_number` | varchar(50) | NOT NULL | |
 | `national_id` | varchar(100) | nullable | Sensitive |
 | `internal_notes` | text | nullable | Sensitive |
-| `created_at` | timestamp | auto-generated | |
+| `created_at` | timestamp | auto-generated, **indexed** | B-tree index for ORDER BY and date range filtering |
 | `updated_at` | timestamp | auto-updated | |
+
+> **Note:** B-tree indexes on `full_name` and `created_at` optimize `ORDER BY` sorting and date range queries. For `%pattern%` ILIKE searches, B-tree doesn't help (would need `pg_trgm`) — a pragmatic trade-off at this scale.
+
+### Database Migrations
+
+The project uses TypeORM migrations instead of `synchronize: true`. Migrations run automatically on app startup (`migrationsRun: true`).
+
+```bash
+cd backend
+
+# Generate a new migration after entity changes
+pnpm run migration:generate src/migrations/MigrationName
+
+# Run pending migrations manually
+pnpm run migration:run
+
+# Revert the last migration
+pnpm run migration:revert
+```
+
+The initial migration (`InitialSchema`) captures the full customers table with columns, unique constraints, and indexes.
 
 ## Sensitive Data Protection (4-Layer Defense)
 
@@ -181,7 +211,8 @@ Payloads are intentionally minimal — no sensitive fields, no full entity. Clie
 | Invalidation over optimistic updates | Mutations invalidate all queries on success rather than optimistically patching the cache. Simpler and always consistent, but users see a brief loading state after each mutation |
 | Server Component prefetch | Faster initial load (no spinner), but prefetched data is always public mode — admin toggle requires a client-side refetch |
 | `keepPreviousData` | Smoother UX during page/search/sort transitions, but briefly shows stale data |
-| ILIKE substring search | Simple `%query%` matching with wildcard escaping. No full-text index needed at this scale, but would require one for larger datasets |
+| ILIKE substring search | Simple `%query%` matching with wildcard escaping. B-tree indexes on `full_name`/`created_at` optimize sorting and date filtering, but don't accelerate `%pattern%` ILIKE — would need `pg_trgm` for larger datasets |
+| TypeORM migrations over `synchronize` | Production-safe schema management with version-controlled migrations. Slightly more workflow overhead, but prevents accidental schema changes and enables rollbacks |
 | Debounced search (300ms) | Reduces API calls during typing, but adds slight delay before results appear |
 | Redis graceful degradation | If Redis is down, queries fall through to the database with a warning log. No circuit breaker — every request attempts Redis first, adding latency when Redis is unavailable |
 | UUID primary keys | Prevents ID enumeration, but larger than auto-increment integers |
