@@ -11,7 +11,18 @@ import {
   ParseUUIDPipe,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiHeader,
+} from '@nestjs/swagger';
+import {
+  PaginatedCustomerResponseDto,
+  CustomerResponseDto,
+  DeleteResponseDto,
+  BulkDeleteResponseDto,
+} from './dto/customer-response.dto';
 import { CustomersService } from './customers.service';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -22,6 +33,12 @@ import { isInternalRequest } from './utils/is-internal-request';
 
 @Controller('customers')
 @ApiTags('customers')
+@ApiHeader({
+  name: 'x-internal',
+  required: false,
+  description:
+    'Set to "true" to enable internal mode — returns and accepts sensitive fields (national_id, internal_notes)',
+})
 @UseInterceptors(SensitiveFieldsInterceptor)
 export class CustomersController {
   constructor(private readonly service: CustomersService) {}
@@ -30,7 +47,11 @@ export class CustomersController {
   @ApiOperation({
     summary: 'List customers with pagination, search, and filtering',
   })
-  @ApiResponse({ status: 200, description: 'Paginated list of customers' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of customers',
+    type: PaginatedCustomerResponseDto,
+  })
   findAll(
     @Query() query: QueryCustomerDto,
     @Headers('x-internal') internal?: string,
@@ -40,7 +61,11 @@ export class CustomersController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single customer by ID' })
-  @ApiResponse({ status: 200, description: 'Customer found' })
+  @ApiResponse({
+    status: 200,
+    description: 'Customer found',
+    type: CustomerResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Customer not found' })
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -51,7 +76,11 @@ export class CustomersController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new customer' })
-  @ApiResponse({ status: 201, description: 'Customer created' })
+  @ApiResponse({
+    status: 201,
+    description: 'Customer created',
+    type: CustomerResponseDto,
+  })
   @ApiResponse({ status: 409, description: 'Email already exists' })
   create(
     @Body() dto: CreateCustomerDto,
@@ -62,7 +91,11 @@ export class CustomersController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update an existing customer' })
-  @ApiResponse({ status: 200, description: 'Customer updated' })
+  @ApiResponse({
+    status: 200,
+    description: 'Customer updated',
+    type: CustomerResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Customer not found' })
   @ApiResponse({ status: 409, description: 'Email already exists' })
   update(
@@ -75,7 +108,11 @@ export class CustomersController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a single customer' })
-  @ApiResponse({ status: 200, description: 'Customer deleted' })
+  @ApiResponse({
+    status: 200,
+    description: 'Customer deleted',
+    type: DeleteResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Customer not found' })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.remove(id);
@@ -83,7 +120,11 @@ export class CustomersController {
 
   @Delete()
   @ApiOperation({ summary: 'Bulk delete customers by IDs' })
-  @ApiResponse({ status: 200, description: 'Customers deleted' })
+  @ApiResponse({
+    status: 200,
+    description: 'Customers deleted',
+    type: BulkDeleteResponseDto,
+  })
   bulkDelete(@Body() dto: BulkDeleteDto) {
     return this.service.bulkDelete(dto.ids);
   }
