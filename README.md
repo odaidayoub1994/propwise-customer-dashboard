@@ -7,7 +7,7 @@ Full-stack Customer Activity Dashboard built with NestJS, Next.js, PostgreSQL, R
 - **Backend**: NestJS 11, TypeORM 0.3, PostgreSQL 16, Redis 7, Socket.IO 4.8, Winston, Swagger
 - **Frontend**: Next.js 16, React 19, TanStack Query 5, Axios, Socket.IO Client 4.8, Tailwind CSS 4, shadcn/ui, next-themes, Sonner
 - **Infrastructure**: Docker Compose, pnpm monorepo
-- **Testing**: Jest (107 unit tests)
+- **Testing**: Jest (127 unit tests)
 
 ## Prerequisites
 
@@ -32,14 +32,15 @@ propwise-customer-dashboard/
 │   ├── socket/              WebSocket gateway + event service
 │   └── filters/             global exception filter
 ├── frontend/src/
-│   ├── app/                 Next.js App Router (layout, page, globals)
+│   ├── app/                 Next.js App Router (layout, page, loading, error)
 │   ├── features/customers/
-│   │   ├── components/      CustomerTable, FormModal, DeleteModal, SearchBar, Toasts
+│   │   ├── components/      CustomerTable, Row, FormModal, DeleteModal, SearchBar, Toasts
 │   │   └── hooks/           useCustomers, useCustomerMutations, useCustomerFilters, useSocket
 │   ├── components/          AdminToggle, Pagination, ThemeToggle, ConnectionStatus, ui/
 │   ├── context/             AdminContext, SocketContext
-│   ├── hooks/               useDebouncedValue
-│   ├── lib/                 Axios fetcher, QueryClient factory, utils
+│   ├── hooks/               useDebouncedValue, useSelection, useTableFilters, usePaginatedQuery, useEntitySocket
+│   ├── lib/                 Axios fetcher, QueryClient factory, error helpers, query key factory
+│   ├── types/               Shared API types (PaginatedResponse, BulkDeleteResponse)
 │   └── config/              env config
 ├── docker-compose.yml
 └── package.json             root monorepo scripts

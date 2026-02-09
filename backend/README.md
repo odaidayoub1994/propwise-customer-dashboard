@@ -140,7 +140,7 @@ Sensitive fields (`national_id`, `internal_notes`) are never logged.
 
 ## Testing
 
-107 unit tests covering services, controllers, DTOs, interceptors, filters, gateway, and utilities.
+127 unit tests covering services, controllers, DTOs, interceptors, filters, gateway, and utilities.
 
 ```bash
 pnpm run test          # Run all tests

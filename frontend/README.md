@@ -37,24 +37,31 @@ src/
 ├── app/
 │   ├── layout.tsx                     Root layout (fonts, providers, metadata)
 │   ├── page.tsx                       Home page (server-side prefetch + HydrationBoundary)
+│   ├── loading.tsx                    Skeleton UI for page transitions
+│   ├── error.tsx                      Error boundary with retry button
 │   └── globals.css                    Tailwind + custom styles
 ├── features/customers/
-│   ├── api.ts                         Axios endpoint functions (CRUD)
-│   ├── keys.ts                        TanStack Query key builders
-│   ├── types.ts                       Customer, PaginatedResponse, CustomerQuery
+│   ├── api.ts                         Axios endpoint functions (CRUD, uses internalHeaders)
+│   ├── keys.ts                        Query keys via createEntityKeys factory
+│   ├── types.ts                       Customer, CustomerQuery (re-exports shared API types)
 │   ├── constants.ts                   Default query params (page size, sort, search min)
 │   ├── socket-events.ts              Socket event name constants
 │   ├── components/
 │   │   ├── CustomerTable.tsx          Main data table with sorting, selection, actions
+│   │   ├── CustomerRow.tsx            Individual table row component
 │   │   ├── CustomerFormModal.tsx      Create/edit dialog with form validation
+│   │   ├── CustomerTableEmpty.tsx     Empty state component
+│   │   ├── CustomerPageHeader.tsx     Page header with title
 │   │   ├── DeleteConfirmModal.tsx     Delete confirmation dialog
-│   │   ├── SearchBar.tsx              Search input with debounce + date range filter
+│   │   ├── SearchBar.tsx              Search input with debounce
+│   │   ├── DateRangeFilter.tsx        Date range from/to pickers
+│   │   ├── BulkActionBar.tsx          Bulk delete action bar
 │   │   └── ToastNotifications.tsx     Socket-driven toast notification listener
-│   └── hooks/
-│       ├── useCustomers.ts            TanStack Query hook for paginated customer list
-│       ├── useCustomerMutations.ts    Create/update/delete/bulk-delete mutations
-│       ├── useCustomerFilters.ts      Filter, sort, and pagination state management
-│       └── useSocket.ts              Socket event listeners + query cache invalidation
+│   └── hooks/                         Thin wrappers around shared hooks
+│       ├── useCustomers.ts            Wraps usePaginatedQuery for customer list
+│       ├── useCustomerMutations.ts    Create/update/delete/bulk-delete (uses getErrorMessage)
+│       ├── useCustomerFilters.ts      Wraps useTableFilters with customer defaults
+│       └── useSocket.ts              Wraps useEntitySocket with customer events
 ├── components/
 │   ├── AdminToggle.tsx                Admin mode switch (public/internal)
 │   ├── ConnectionStatus.tsx           WebSocket connection status badge
@@ -65,12 +72,22 @@ src/
 ├── context/
 │   ├── AdminContext.tsx               Admin mode state (localStorage + useSyncExternalStore)
 │   └── SocketContext.tsx              Singleton Socket.IO client instance
-├── hooks/
-│   └── useDebouncedValue.ts           Debounced value hook
-├── lib/
+├── hooks/                             Shared reusable hooks
+│   ├── useDebouncedValue.ts           Debounced value hook
+│   ├── useSelection.ts               Table row selection (toggle one/all/clear)
+│   ├── useTableFilters.ts            Generic filter/sort/pagination state
+│   ├── usePaginatedQuery.ts          Generic paginated list query (keepPreviousData + isInternal)
+│   └── useEntitySocket.ts            Generic socket event wiring + cache invalidation
+├── lib/                               Utilities and configuration
 │   ├── fetcher.ts                     Axios instance (baseURL, x-internal header injection)
 │   ├── react-query.ts                 makeQueryClient() factory (staleTime: 30s)
+│   ├── error.ts                       getErrorMessage() for mutation error handling
+│   ├── api-helpers.ts                 internalHeaders() for x-internal header
+│   ├── query-keys.ts                  createEntityKeys<T>() factory for query key hierarchy
+│   ├── format.ts                      Date/time formatting utilities
 │   └── utils.ts                       cn() utility (clsx + tailwind-merge)
+├── types/                             Shared type definitions
+│   └── api.ts                         PaginatedResponse<T>, BulkDeleteResponse
 └── config/
     └── env.config.ts                  NEXT_PUBLIC_API_URL with default
 ```
@@ -91,14 +108,42 @@ Three layers handle different types of state:
 - `SocketContext` — singleton Socket.IO client instance shared across the app
 
 **URL state**
-- `useCustomerFilters` hook manages filter, sort, and pagination parameters as component state
+- `useCustomerFilters` hook wraps the shared `useTableFilters` with customer-specific defaults (sort column, page size, date autofill delay)
 
 ## Real-Time Updates
 
 - Socket.IO Client connects to the backend WebSocket gateway on mount
-- `useSocket` hook listens to 4 events: `customer.created`, `customer.updated`, `customer.deleted`, `customers.bulk_deleted`
+- `useSocket` hook wraps the shared `useEntitySocket` with customer-specific events (`customer.created`, `customer.updated`, `customer.deleted`, `customers.bulk_deleted`)
 - On each event: displays a Sonner toast notification and invalidates TanStack Query cache (triggers automatic refetch)
 - `ConnectionStatus` component shows a badge indicating connection state (connected/reconnecting)
+
+## Scalability Architecture
+
+Shared hooks and utilities live in `hooks/`, `lib/`, and `types/`. Feature-specific code in `features/<name>/` wraps them with entity-specific config.
+
+### Shared Utilities
+
+| File | Purpose |
+|------|---------|
+| `lib/error.ts` | `getErrorMessage()` — extract API error messages for mutation toast notifications |
+| `lib/api-helpers.ts` | `internalHeaders()` — build `x-internal` header object |
+| `lib/query-keys.ts` | `createEntityKeys<TQuery>(entity)` — generate TanStack Query key hierarchy |
+| `types/api.ts` | `PaginatedResponse<T>`, `BulkDeleteResponse` — shared API response types |
+| `hooks/useSelection.ts` | Table row selection (toggle one/all/clear) |
+| `hooks/useTableFilters.ts` | Generic filter/sort/pagination state with configurable defaults |
+| `hooks/usePaginatedQuery.ts` | Paginated list query with `keepPreviousData` + `isInternal` injection |
+| `hooks/useEntitySocket.ts` | Socket event wiring with TanStack Query cache invalidation |
+
+### Scaffolding a New Feature
+
+To add a new entity (e.g., `orders`):
+
+1. Create `features/orders/types.ts` — entity interface, query params, sort columns
+2. Create `features/orders/constants.ts` — default page, sort, search config
+3. Create `features/orders/keys.ts` — `createEntityKeys<OrderQuery>('orders')`
+4. Create `features/orders/api.ts` — endpoint functions using `internalHeaders()`
+5. Create `features/orders/hooks/` — thin wrappers: `useOrders` (wraps `usePaginatedQuery`), `useOrderFilters` (wraps `useTableFilters`), `useSocket` (wraps `useEntitySocket`), mutation hooks (use `getErrorMessage`)
+6. Create `features/orders/components/` — table, form modal, etc.
 
 ## Theming
 
