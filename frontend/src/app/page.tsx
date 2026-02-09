@@ -12,6 +12,9 @@ import { CustomerTable } from '@/features/customers/components/CustomerTable';
 export default async function HomePage() {
   const queryClient: QueryClient = makeQueryClient();
 
+  // Server Components can't access localStorage, so we always prefetch in
+  // public mode. After hydration, TanStack Query refetches with the correct
+  // admin state since the query key includes isInternal.
   await queryClient.prefetchQuery({
     queryKey: customerKeys.list({
       ...DEFAULT_QUERY,
