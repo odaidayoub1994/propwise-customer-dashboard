@@ -1,14 +1,11 @@
 import fetcher from '@/lib/fetcher';
+import { internalHeaders } from '@/lib/api-helpers';
 import type {
   BulkDeleteResponse,
   Customer,
   CustomerQuery,
   PaginatedResponse,
 } from '@/features/customers/types';
-
-function internalHeaders(isInternal: boolean) {
-  return isInternal ? { 'x-internal': 'true' } : {};
-}
 
 export async function fetchCustomers(
   params: CustomerQuery,
