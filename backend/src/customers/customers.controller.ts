@@ -11,12 +11,7 @@ import {
   ParseUUIDPipe,
   UseInterceptors,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiHeader,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from '@nestjs/swagger';
 import {
   PaginatedCustomerResponseDto,
   CustomerResponseDto,
