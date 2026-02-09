@@ -162,24 +162,30 @@ Swagger docs available at [http://localhost:4000/api/docs](http://localhost:4000
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `customer.created` | `{ id, full_name, email, phone_number, created_at, updated_at }` | New customer created |
-| `customer.updated` | `{ id, full_name, email, phone_number, created_at, updated_at }` | Customer updated |
+| `customer.created` | `{ id, full_name, email }` | New customer created |
+| `customer.updated` | `{ id, full_name, email }` | Customer updated |
 | `customer.deleted` | `{ id }` | Customer deleted |
 | `customers.bulk_deleted` | `{ ids }` | Multiple customers deleted |
 
-Payloads never include sensitive fields. Clients receive toast notifications and auto-refetch data via TanStack Query invalidation.
+Payloads are intentionally minimal — no sensitive fields, no full entity. Clients receive toast notifications and auto-refetch full data via TanStack Query invalidation.
 
 ## Architecture Trade-offs
 
 | Decision | Trade-off |
 |----------|-----------|
-| Version-based list cache invalidation | O(1) writes, but stale list caches persist until TTL expires (acceptable for dashboard use case) |
-| 4-layer sensitive field defense | Redundant checks add minimal overhead but prevent accidental leaks at every layer |
+| Version-based list cache invalidation | O(1) writes via `INCR`, but all list caches become stale at once (a single edit invalidates every page/sort/filter combination). Acceptable for dashboard scale; per-page invalidation would add complexity. |
+| 4-layer sensitive field defense | Redundant checks add minimal overhead but prevent accidental leaks at every layer — if one layer fails, others catch it |
 | `isInternal` in cache keys | Doubles cache entries for the same data, but prevents cross-mode data leaks |
-| Server Component prefetch | Faster initial load, but prefetched data is always public mode (admin toggle requires client refetch) |
-| `keepPreviousData` | Smoother UX during transitions, but briefly shows stale data |
+| Minimal socket payloads | Events emit only `{ id, full_name, email }` — no sensitive fields, no full entity. Clients must refetch for complete data, but this avoids accidental leakage over WebSocket |
+| Invalidation over optimistic updates | Mutations invalidate all queries on success rather than optimistically patching the cache. Simpler and always consistent, but users see a brief loading state after each mutation |
+| Server Component prefetch | Faster initial load (no spinner), but prefetched data is always public mode — admin toggle requires a client-side refetch |
+| `keepPreviousData` | Smoother UX during page/search/sort transitions, but briefly shows stale data |
+| ILIKE substring search | Simple `%query%` matching with wildcard escaping. No full-text index needed at this scale, but would require one for larger datasets |
+| Debounced search (300ms) | Reduces API calls during typing, but adds slight delay before results appear |
+| Redis graceful degradation | If Redis is down, queries fall through to the database with a warning log. No circuit breaker — every request attempts Redis first, adding latency when Redis is unavailable |
 | UUID primary keys | Prevents ID enumeration, but larger than auto-increment integers |
-| Single endpoint with header | Simpler routing than separate `/internal` endpoints, but requires consistent header handling |
+| Single endpoint with `x-internal` header | Simpler routing than separate `/internal` endpoints, but requires consistent header handling across all callers |
+| `ValidationPipe` with `whitelist: true` | Unknown fields silently stripped from requests — provides defense-in-depth for sensitive fields but callers get no feedback about ignored fields |
 
 ## Environment Variables
 

@@ -111,12 +111,12 @@ Events are emitted via `SocketService.emitCustomerEvent()` after every mutation:
 
 | Event | Payload | Trigger |
 |-------|---------|---------|
-| `customer.created` | `{ id, full_name, email, phone_number, created_at, updated_at }` | POST /customers |
-| `customer.updated` | `{ id, full_name, email, phone_number, created_at, updated_at }` | PUT /customers/:id |
+| `customer.created` | `{ id, full_name, email }` | POST /customers |
+| `customer.updated` | `{ id, full_name, email }` | PUT /customers/:id |
 | `customer.deleted` | `{ id }` | DELETE /customers/:id |
 | `customers.bulk_deleted` | `{ ids }` | DELETE /customers |
 
-Payloads never include sensitive fields.
+Payloads are intentionally minimal — no sensitive fields, no full entity. Clients refetch full data via TanStack Query invalidation.
 
 ## Error Handling
 
