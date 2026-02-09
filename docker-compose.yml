@@ -25,6 +25,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: production
     container_name: propwise-backend
     restart: unless-stopped
     ports:
@@ -46,6 +47,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: production
       args:
         NEXT_PUBLIC_API_URL: http://backend:${PORT:-4000}
     container_name: propwise-frontend
