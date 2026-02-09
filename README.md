@@ -7,7 +7,7 @@ Full-stack Customer Activity Dashboard built with NestJS, Next.js, PostgreSQL, R
 - **Backend**: NestJS 11, TypeORM 0.3, PostgreSQL 16, Redis 7, Socket.IO 4.8, Winston, Swagger
 - **Frontend**: Next.js 16, React 19, TanStack Query 5, Axios, Socket.IO Client 4.8, Tailwind CSS 4, shadcn/ui, next-themes, Sonner
 - **Infrastructure**: Docker Compose, pnpm monorepo
-- **Testing**: Jest (127 unit tests)
+- **Testing**: Jest (127 backend tests), Vitest (37 frontend tests)
 
 ## Prerequisites
 
@@ -110,9 +110,11 @@ Both Dockerfiles use multi-stage builds with `dev` and `production` targets. Pro
 | `pnpm run lint:backend`   | Lint backend only                                                 |
 | `pnpm run lint:frontend`  | Lint frontend only                                                |
 | `pnpm run format`         | Format backend code (Prettier)                                    |
-| `pnpm run test`           | Run backend unit tests                                            |
-| `pnpm run test:watch`     | Run tests in watch mode                                           |
-| `pnpm run test:cov`       | Run tests with coverage report                                    |
+| `pnpm run test`           | Run all tests (backend + frontend)                                |
+| `pnpm run test:backend`   | Run backend tests only (Jest, 127 tests)                          |
+| `pnpm run test:frontend`  | Run frontend tests only (Vitest, 37 tests)                        |
+| `pnpm run test:watch`     | Run backend tests in watch mode                                   |
+| `pnpm run test:cov`       | Run tests with coverage report (both packages)                    |
 | `pnpm run seed`           | Seed database with 50 sample customers                            |
 | `pnpm run docker:up`      | Start full Docker stack (all services)                            |
 | `pnpm run docker:down`    | Stop full Docker stack                                            |

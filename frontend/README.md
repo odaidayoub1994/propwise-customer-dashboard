@@ -151,6 +151,28 @@ To add a new entity (e.g., `orders`):
 - `ThemeToggle` component cycles through modes
 - shadcn/ui components adapt automatically via Tailwind CSS variables
 
+## Testing
+
+37 unit tests covering pure utilities and the API layer using Vitest + happy-dom.
+
+```bash
+pnpm run test          # Run all tests
+pnpm run test:watch    # Watch mode
+pnpm run test:cov      # Coverage report
+```
+
+Test files are co-located with source files as `*.spec.ts`:
+
+| Category | Files | Tests | What's Covered |
+|----------|-------|-------|----------------|
+| Pure utilities | 10 | 29 | Error handling, API helpers, query keys, date formatting, Tailwind utils, QueryClient factory, customer constants, socket events, env config |
+| API layer | 1 | 8 | All 6 customer API functions — correct HTTP method, URL, params, headers, response extraction |
+
+Test infrastructure:
+- `vitest.config.mts` — Vitest config with happy-dom, `@` path alias, v8 coverage
+- `src/test/setup.ts` — jest-dom matchers for DOM assertions
+- `src/test/fixtures.ts` — shared mock data (customer objects, paginated responses)
+
 ## Available Scripts
 
 | Script | Description |
@@ -159,6 +181,9 @@ To add a new entity (e.g., `orders`):
 | `pnpm run build` | Production build |
 | `pnpm run start` | Production server |
 | `pnpm run lint` | Lint check |
+| `pnpm run test` | Run unit tests |
+| `pnpm run test:watch` | Tests in watch mode |
+| `pnpm run test:cov` | Tests with coverage report |
 
 ## Environment Variables
 
