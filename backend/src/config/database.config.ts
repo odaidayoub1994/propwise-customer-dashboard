@@ -14,6 +14,8 @@ export const databaseConfig: TypeOrmModuleOptions = {
   username: DB_USERNAME,
   password: DB_PASSWORD,
   database: DB_NAME,
-  synchronize: true,
+  synchronize: false,
   autoLoadEntities: true,
+  migrationsRun: true,
+  migrations: [__dirname + '/../migrations/*{.ts,.js}'],
 };
