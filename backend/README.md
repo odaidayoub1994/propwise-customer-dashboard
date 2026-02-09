@@ -1,98 +1,185 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Propwise Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS REST API with PostgreSQL, Redis caching, and real-time WebSocket events.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+See the [root README](../README.md) for full project setup and architecture overview.
 
-## Description
+## Tech Stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- NestJS 11 (core, config, swagger, typeorm, websockets, platform-express, platform-socket.io)
+- TypeORM 0.3 + PostgreSQL (pg 8)
+- ioredis 5
+- Socket.IO 4.8
+- Winston 3 + nest-winston
+- class-validator + class-transformer
+- Jest 30 + @nestjs/testing
 
-## Project setup
+## Module Architecture
 
-```bash
-$ pnpm install
+`AppModule` imports the following modules:
+
+| Module | Purpose |
+|--------|---------|
+| `ConfigModule` | Loads `.env` into `process.env` |
+| `WinstonModule` | Structured logging (JSON in production, colored in development) |
+| `TypeOrmModule` | PostgreSQL connection via DataSource |
+| `RedisModule` | ioredis client factory with graceful fallback on connection failure |
+| `CacheModule` | Generic cache operations (get, set, delete, version-based invalidation) |
+| `SocketModule` | WebSocket gateway for real-time event broadcasting |
+| `CustomersModule` | Customer CRUD: controller, service, DTOs, entity, interceptor, utilities |
+
+## Project Structure
+
+```
+src/
+├── main.ts                                    Application bootstrap + Swagger setup
+├── app.module.ts                              Root module
+├── config/
+│   ├── env.config.ts                          Centralized env var parsing (fail-fast)
+│   ├── database.config.ts                     TypeORM DataSource configuration
+│   └── logger.ts                              Winston format configuration
+├── customers/
+│   ├── customers.module.ts                    Module definition
+│   ├── customers.controller.ts                REST endpoints
+│   ├── customers.service.ts                   Business logic + Redis caching
+│   ├── dto/
+│   │   ├── create-customer.dto.ts             Create validation rules
+│   │   ├── update-customer.dto.ts             Partial update (PartialType)
+│   │   ├── query-customer.dto.ts              Pagination, search, sort, date filter params
+│   │   └── bulk-delete.dto.ts                 Bulk delete validation (UUID array)
+│   ├── entities/
+│   │   └── customer.entity.ts                 TypeORM entity definition
+│   ├── interceptors/
+│   │   └── sensitive-fields.interceptor.ts    Recursive sensitive field stripping
+│   ├── types/
+│   │   └── socket-events.ts                   Socket event payload type definitions
+│   └── utils/
+│       ├── is-internal-request.ts             x-internal header parser (case-insensitive)
+│       ├── strip-sensitive.ts                 Recursive sensitive field stripper
+│       └── escape-ilike.ts                    SQL ILIKE wildcard character escaping
+├── cache/
+│   ├── cache.module.ts                        Cache module
+│   └── cache.service.ts                       Redis get/set/delete + version operations
+├── redis/
+│   └── redis.module.ts                        ioredis factory provider
+├── socket/
+│   ├── socket.module.ts                       Socket module
+│   ├── socket.gateway.ts                      WebSocket gateway (handleConnection/Disconnect)
+│   ├── socket.service.ts                      Event emission service
+│   └── socket-events.ts                       Centralized event name constants
+└── filters/
+    └── all-exceptions.filter.ts               Global exception filter
 ```
 
-## Compile and run the project
+Every `.ts` file has a corresponding `.spec.ts` test file (omitted for brevity).
+
+## API Endpoints
+
+| Method | Path | Description | Query Params |
+|--------|------|-------------|--------------|
+| GET | `/customers` | List customers (paginated, searchable) | `page`, `limit`, `q`, `sort_by`, `sort_order`, `date_from`, `date_to` |
+| GET | `/customers/:id` | Get a single customer by ID | — |
+| POST | `/customers` | Create a new customer | — |
+| PUT | `/customers/:id` | Update an existing customer | — |
+| DELETE | `/customers/:id` | Delete a single customer | — |
+| DELETE | `/customers` | Bulk delete (body: `{ ids: string[] }`) | — |
+
+All endpoints accept an `x-internal: true` header. When present, responses include sensitive fields (`national_id`, `internal_notes`) and write operations accept them.
+
+Swagger docs: [http://localhost:4000/api/docs](http://localhost:4000/api/docs)
+
+## Sensitive Data Protection
+
+4-layer defense ensures sensitive fields (`national_id`, `internal_notes`) never leak to public consumers:
+
+1. **Service write guard** — `create()` and `update()` strip sensitive fields from the DTO when `isInternal` is false
+2. **Output interceptor** — `SensitiveFieldsInterceptor` recursively strips sensitive fields from all API responses in public mode
+3. **Cache sanitization** — public-mode payloads are sanitized before caching to Redis (via shared `stripSensitive()`)
+4. **Cache key isolation** — every cache key includes the `isInternal` flag, so internal and public caches are never mixed
+
+## Caching Strategy
+
+- **List caching**: version-based invalidation. Mutations call `INCR customers:list:version`, and the version is embedded in each list cache key. This is O(1) instead of scanning and deleting all list keys.
+- **Detail caching**: explicit `DEL` on update/delete (both `:internal:true` and `:internal:false` variants).
+- **Key structure**: `customers:list:v${version}:internal:${isInternal}:p=${page}:l=${limit}:...` for lists, `customers:detail:${id}:internal:${isInternal}` for details.
+- **TTL**: configurable via `CACHE_TTL` env var (default 60s).
+- **Graceful degradation**: Redis failures log a warning and fall through to the database.
+
+## WebSocket Events
+
+Events are emitted via `SocketService.emitCustomerEvent()` after every mutation:
+
+| Event | Payload | Trigger |
+|-------|---------|---------|
+| `customer.created` | `{ id, full_name, email, phone_number, created_at, updated_at }` | POST /customers |
+| `customer.updated` | `{ id, full_name, email, phone_number, created_at, updated_at }` | PUT /customers/:id |
+| `customer.deleted` | `{ id }` | DELETE /customers/:id |
+| `customers.bulk_deleted` | `{ ids }` | DELETE /customers |
+
+Payloads never include sensitive fields.
+
+## Error Handling
+
+The global `AllExceptionsFilter` provides consistent error responses:
+
+- Catches unhandled exceptions and logs full context (method, URL, stack trace)
+- Maps TypeORM `QueryFailedError` with unique constraint violations to HTTP 409 Conflict
+- Returns a consistent shape: `{ statusCode, message, error, timestamp, path }`
+- Never exposes stack traces or SQL queries to the client
+
+## Logging
+
+Winston with nest-winston provides structured logging:
+
+- `log()` — significant operations (customer created, updated, deleted)
+- `warn()` — recoverable issues (Redis connection failed, cache miss)
+- `error()` — failures with full context (class, method, params, error message)
+- `debug?.()` — detailed flow tracing (cache hit/miss, socket events emitted)
+
+Sensitive fields (`national_id`, `internal_notes`) are never logged.
+
+## Testing
+
+107 unit tests covering services, controllers, DTOs, interceptors, filters, gateway, and utilities.
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm run test          # Run all tests
+pnpm run test:watch    # Watch mode
+pnpm run test:cov      # Coverage report
 ```
 
-## Run tests
+Testing pattern: `@nestjs/testing` `Test.createTestingModule()` with all external dependencies mocked (repositories, Redis client, gateway, services).
 
-```bash
-# unit tests
-$ pnpm run test
+## Available Scripts
 
-# e2e tests
-$ pnpm run test:e2e
+| Script | Description |
+|--------|-------------|
+| `pnpm run start:dev` | Development server with hot reload |
+| `pnpm run start` | Start without watch mode |
+| `pnpm run start:prod` | Production mode (`node dist/main`) |
+| `pnpm run start:debug` | Debug mode with inspector |
+| `pnpm run build` | Compile to `dist/` |
+| `pnpm run lint` | Lint and auto-fix |
+| `pnpm run format` | Format code (Prettier) |
+| `pnpm run test` | Run unit tests |
+| `pnpm run test:watch` | Tests in watch mode |
+| `pnpm run test:cov` | Tests with coverage report |
+| `pnpm run test:e2e` | End-to-end tests |
+| `pnpm run seed` | Seed database with 50 sample customers |
 
-# test coverage
-$ pnpm run test:cov
-```
+## Environment Variables
 
-## Deployment
+See `backend/.env.example` for a template.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `4000` | Server port |
+| `DB_HOST` | — | PostgreSQL host |
+| `DB_PORT` | `5432` | PostgreSQL port |
+| `DB_USERNAME` | — | PostgreSQL user |
+| `DB_PASSWORD` | — | PostgreSQL password |
+| `DB_NAME` | — | PostgreSQL database |
+| `REDIS_HOST` | `localhost` | Redis host |
+| `REDIS_PORT` | `6379` | Redis port |
+| `CORS_ORIGIN` | `*` | Allowed CORS origin |
+| `CACHE_TTL` | `60` | Redis cache TTL in seconds |

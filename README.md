@@ -2,11 +2,52 @@
 
 Full-stack Customer Activity Dashboard built with NestJS, Next.js, PostgreSQL, Redis, and Socket.IO.
 
+## Tech Stack
+
+- **Backend**: NestJS 11, TypeORM 0.3, PostgreSQL 16, Redis 7, Socket.IO 4.8, Winston, Swagger
+- **Frontend**: Next.js 16, React 19, TanStack Query 5, Axios, Socket.IO Client 4.8, Tailwind CSS 4, shadcn/ui, next-themes, Sonner
+- **Infrastructure**: Docker Compose, pnpm monorepo
+- **Testing**: Jest (107 unit tests)
+
 ## Prerequisites
 
 - Node.js 20+
 - Docker & Docker Compose
 - pnpm (`npm install -g pnpm`)
+
+## Project Structure
+
+```
+propwise-customer-dashboard/
+├── backend/src/
+│   ├── config/              env, database, logger configuration
+│   ├── customers/
+│   │   ├── dto/             create, update, query, bulk-delete DTOs
+│   │   ├── entities/        TypeORM Customer entity
+│   │   ├── interceptors/    sensitive field stripping
+│   │   ├── types/           socket event payload types
+│   │   └── utils/           isInternalRequest, stripSensitive, escapeIlike
+│   ├── cache/               Redis cache service (get/set/delete/version)
+│   ├── redis/               ioredis client factory
+│   ├── socket/              WebSocket gateway + event service
+│   └── filters/             global exception filter
+├── frontend/src/
+│   ├── app/                 Next.js App Router (layout, page, globals)
+│   ├── features/customers/
+│   │   ├── components/      CustomerTable, FormModal, DeleteModal, SearchBar, Toasts
+│   │   └── hooks/           useCustomers, useCustomerMutations, useCustomerFilters, useSocket
+│   ├── components/          AdminToggle, Pagination, ThemeToggle, ConnectionStatus, ui/
+│   ├── context/             AdminContext, SocketContext
+│   ├── hooks/               useDebouncedValue
+│   ├── lib/                 Axios fetcher, QueryClient factory, utils
+│   └── config/              env config
+├── docker-compose.yml
+└── package.json             root monorepo scripts
+```
+
+Feature-based co-location: domain code lives in `features/<name>/`, shared code in `components/` and `lib/`.
+
+See [backend README](./backend/README.md) and [frontend README](./frontend/README.md) for package-specific details.
 
 ## Quick Start
 
@@ -39,6 +80,33 @@ pnpm run docker:up      # Backend on :4000, Frontend on :3000
 pnpm run docker:build   # Rebuild after code changes
 ```
 
+## Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `pnpm run dev` | Start everything (infra + backend + frontend) with colored output |
+| `pnpm run dev:backend` | Start backend only (watch mode) |
+| `pnpm run dev:frontend` | Start frontend only |
+| `pnpm run infra` | Start PostgreSQL + Redis containers (detached) |
+| `pnpm run infra:down` | Stop all Docker containers |
+| `pnpm run build` | Build both backend and frontend |
+| `pnpm run build:backend` | Build backend only |
+| `pnpm run build:frontend` | Build frontend only |
+| `pnpm run lint` | Lint both packages |
+| `pnpm run lint:backend` | Lint backend only |
+| `pnpm run lint:frontend` | Lint frontend only |
+| `pnpm run format` | Format backend code (Prettier) |
+| `pnpm run test` | Run backend unit tests |
+| `pnpm run test:watch` | Run tests in watch mode |
+| `pnpm run test:cov` | Run tests with coverage report |
+| `pnpm run seed` | Seed database with 50 sample customers |
+| `pnpm run docker:up` | Start full Docker stack (all services) |
+| `pnpm run docker:down` | Stop full Docker stack |
+| `pnpm run docker:build` | Rebuild and start Docker stack |
+| `pnpm run install:all` | Install dependencies in both packages |
+
+Per-package scripts are documented in each package's README ([backend](./backend/README.md), [frontend](./frontend/README.md)).
+
 ## API Endpoints
 
 | Method | Path | Description |
@@ -53,6 +121,21 @@ pnpm run docker:build   # Rebuild after code changes
 All endpoints accept an `x-internal: true` header for admin mode, which reveals sensitive fields (`national_id`, `internal_notes`).
 
 Swagger docs available at [http://localhost:4000/api/docs](http://localhost:4000/api/docs).
+
+## Database Schema
+
+### Customers
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| `id` | UUID | PK, auto-generated | |
+| `full_name` | varchar(255) | NOT NULL | |
+| `email` | varchar(255) | UNIQUE, NOT NULL | |
+| `phone_number` | varchar(50) | NOT NULL | |
+| `national_id` | varchar(100) | nullable | Sensitive |
+| `internal_notes` | text | nullable | Sensitive |
+| `created_at` | timestamp | auto-generated | |
+| `updated_at` | timestamp | auto-updated | |
 
 ## Sensitive Data Protection (4-Layer Defense)
 

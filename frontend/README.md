@@ -1,36 +1,124 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Propwise Frontend
 
-## Getting Started
+Next.js dashboard with server-side prefetch, real-time WebSocket updates, and admin mode toggle.
 
-First, run the development server:
+See the [root README](../README.md) for full project setup and architecture overview.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Tech Stack
+
+- Next.js 16 (App Router, Server Components)
+- React 19
+- TanStack Query 5 (server state management)
+- Axios (HTTP client)
+- Socket.IO Client 4.8 (real-time events)
+- Tailwind CSS 4 + tw-animate-css
+- shadcn/ui (Radix-based component library)
+- next-themes (dark/light/system mode)
+- Sonner (toast notifications)
+- Lucide React (icons)
+
+## Features
+
+- Customer data table with column sorting (name, date), pagination, and configurable page size
+- Full-text search across name and email (minimum 3 characters, debounced, auto-trimmed)
+- Date range filtering with from/to date pickers and auto-fill
+- Create and edit customers via modal form with validation
+- Single and bulk delete with confirmation dialog
+- Admin mode toggle — reveals sensitive fields (`national_id`, `internal_notes`) via `x-internal` header
+- Dark/light/system theme toggle (persisted via next-themes)
+- WebSocket connection status badge (connected/reconnecting indicator)
+- Real-time toast notifications for CRUD events from other clients
+- Server-side data prefetch — no loading spinner on initial page load
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── layout.tsx                     Root layout (fonts, providers, metadata)
+│   ├── page.tsx                       Home page (server-side prefetch + HydrationBoundary)
+│   └── globals.css                    Tailwind + custom styles
+├── features/customers/
+│   ├── api.ts                         Axios endpoint functions (CRUD)
+│   ├── keys.ts                        TanStack Query key builders
+│   ├── types.ts                       Customer, PaginatedResponse, CustomerQuery
+│   ├── constants.ts                   Default query params (page size, sort, search min)
+│   ├── socket-events.ts              Socket event name constants
+│   ├── components/
+│   │   ├── CustomerTable.tsx          Main data table with sorting, selection, actions
+│   │   ├── CustomerFormModal.tsx      Create/edit dialog with form validation
+│   │   ├── DeleteConfirmModal.tsx     Delete confirmation dialog
+│   │   ├── SearchBar.tsx              Search input with debounce + date range filter
+│   │   └── ToastNotifications.tsx     Socket-driven toast notification listener
+│   └── hooks/
+│       ├── useCustomers.ts            TanStack Query hook for paginated customer list
+│       ├── useCustomerMutations.ts    Create/update/delete/bulk-delete mutations
+│       ├── useCustomerFilters.ts      Filter, sort, and pagination state management
+│       └── useSocket.ts              Socket event listeners + query cache invalidation
+├── components/
+│   ├── AdminToggle.tsx                Admin mode switch (public/internal)
+│   ├── ConnectionStatus.tsx           WebSocket connection status badge
+│   ├── Pagination.tsx                 Reusable pagination controls
+│   ├── ThemeToggle.tsx                Dark/light/system theme switch
+│   ├── Providers.tsx                  Provider composition wrapper
+│   └── ui/                            shadcn/ui primitives (button, dialog, input, table, etc.)
+├── context/
+│   ├── AdminContext.tsx               Admin mode state (localStorage + useSyncExternalStore)
+│   └── SocketContext.tsx              Singleton Socket.IO client instance
+├── hooks/
+│   └── useDebouncedValue.ts           Debounced value hook
+├── lib/
+│   ├── fetcher.ts                     Axios instance (baseURL, x-internal header injection)
+│   ├── react-query.ts                 makeQueryClient() factory (staleTime: 30s)
+│   └── utils.ts                       cn() utility (clsx + tailwind-merge)
+└── config/
+    └── env.config.ts                  NEXT_PUBLIC_API_URL with default
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## State Management
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Three layers handle different types of state:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Server state — TanStack Query 5**
+- All API data fetched and cached via TanStack Query
+- Query keys include `isInternal` flag to separate public and admin caches client-side
+- `staleTime: 30s` prevents unnecessary refetches on component remounts
+- `keepPreviousData` keeps old data visible during page/search/sort transitions
+- Server-side prefetch via `queryClient.prefetchQuery()` in Server Components (no loading spinner on first render)
 
-## Learn More
+**Client state — React Context**
+- `AdminContext` — admin mode toggle backed by `localStorage` and `useSyncExternalStore` for sync access across components
+- `SocketContext` — singleton Socket.IO client instance shared across the app
 
-To learn more about Next.js, take a look at the following resources:
+**URL state**
+- `useCustomerFilters` hook manages filter, sort, and pagination parameters as component state
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Real-Time Updates
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Socket.IO Client connects to the backend WebSocket gateway on mount
+- `useSocket` hook listens to 4 events: `customer.created`, `customer.updated`, `customer.deleted`, `customers.bulk_deleted`
+- On each event: displays a Sonner toast notification and invalidates TanStack Query cache (triggers automatic refetch)
+- `ConnectionStatus` component shows a badge indicating connection state (connected/reconnecting)
 
-## Deploy on Vercel
+## Theming
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `next-themes` with `attribute="class"` and `enableSystem` for three modes: light, dark, system
+- `ThemeToggle` component cycles through modes
+- shadcn/ui components adapt automatically via Tailwind CSS variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `pnpm run dev` | Development server on port 3000 |
+| `pnpm run build` | Production build |
+| `pnpm run start` | Production server |
+| `pnpm run lint` | Lint check |
+
+## Environment Variables
+
+Create `frontend/.env.local` for local overrides. `NEXT_PUBLIC_*` vars are inlined at build time.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:4000` | Backend API URL |
