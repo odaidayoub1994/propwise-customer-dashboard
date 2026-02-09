@@ -32,7 +32,7 @@ export function SearchBar({ value, onChange, hint }: SearchBarProps) {
           </button>
         )}
       </div>
-      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-amber-600/70 dark:text-amber-400/70">{hint}</p>}
     </search>
   );
 }

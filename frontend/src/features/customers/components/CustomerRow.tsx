@@ -1,16 +1,9 @@
 "use client";
 
 import { memo } from "react";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -45,6 +38,7 @@ function getInitials(name: string): string {
 
 interface CustomerRowProps {
   customer: Customer;
+  index: number;
   isSelected: boolean;
   isInternal: boolean;
   onToggleSelect: (id: string) => void;
@@ -54,16 +48,20 @@ interface CustomerRowProps {
 
 export const CustomerRow = memo(function CustomerRow({
   customer,
+  index,
   isSelected,
   isInternal,
   onToggleSelect,
   onEdit,
   onDelete,
 }: CustomerRowProps) {
+  const stripe = index % 2 === 1 ? " bg-muted/30" : "";
+  const rowBg = isSelected ? " bg-primary/5" : stripe;
+
   return (
     <TableRow
       data-state={isSelected ? "selected" : undefined}
-      className={`transition-colors duration-150${isSelected ? " bg-primary/5" : ""}`}
+      className={`transition-colors duration-150${rowBg}`}
     >
       <TableCell>
         <Checkbox
@@ -115,27 +113,35 @@ export const CustomerRow = memo(function CustomerRow({
         {formatDate(customer.created_at)}
       </TableCell>
       <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label="Row actions">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-36">
-            <DropdownMenuItem onClick={() => onEdit(customer)}>
-              <Pencil className="h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => onDelete(customer.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => onEdit(customer)}
+                aria-label="Edit"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => onDelete(customer.id)}
+                className="hover:text-destructive"
+                aria-label="Delete"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Delete</TooltipContent>
+          </Tooltip>
+        </div>
       </TableCell>
     </TableRow>
   );

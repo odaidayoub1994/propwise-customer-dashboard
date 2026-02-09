@@ -227,10 +227,11 @@ export function CustomerTable() {
           </TableHeader>
           <TableBody>
             {showRows ? (
-              customers.map((customer) => (
+              customers.map((customer, index) => (
                 <CustomerRow
                   key={customer.id}
                   customer={customer}
+                  index={index}
                   isSelected={selectedIds.has(customer.id)}
                   isInternal={isInternal}
                   onToggleSelect={toggleOne}
