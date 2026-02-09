@@ -65,11 +65,13 @@ pnpm run dev
 Backend at http://localhost:4000, Frontend at http://localhost:3000.
 
 Seed the database (requires infra running):
+
 ```bash
 pnpm run seed
 ```
 
 **Alternative: step-by-step setup**
+
 ```bash
 docker compose up -d postgres redis   # Start infra
 
@@ -78,12 +80,14 @@ cd frontend && pnpm install && pnpm run dev
 ```
 
 **Full Docker stack — production** (all services):
+
 ```bash
 pnpm run docker:up      # Backend on :4000, Frontend on :3000
 pnpm run docker:build   # Rebuild after code changes
 ```
 
 **Full Docker stack — development** (hot-reload with volume mounts):
+
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
@@ -92,41 +96,41 @@ Both Dockerfiles use multi-stage builds with `dev` and `production` targets. Pro
 
 ## Available Scripts
 
-| Script | Description |
-|--------|-------------|
-| `pnpm run dev` | Start everything (infra + backend + frontend) with colored output |
-| `pnpm run dev:backend` | Start backend only (watch mode) |
-| `pnpm run dev:frontend` | Start frontend only |
-| `pnpm run infra` | Start PostgreSQL + Redis containers (detached) |
-| `pnpm run infra:down` | Stop all Docker containers |
-| `pnpm run build` | Build both backend and frontend |
-| `pnpm run build:backend` | Build backend only |
-| `pnpm run build:frontend` | Build frontend only |
-| `pnpm run lint` | Lint both packages |
-| `pnpm run lint:backend` | Lint backend only |
-| `pnpm run lint:frontend` | Lint frontend only |
-| `pnpm run format` | Format backend code (Prettier) |
-| `pnpm run test` | Run backend unit tests |
-| `pnpm run test:watch` | Run tests in watch mode |
-| `pnpm run test:cov` | Run tests with coverage report |
-| `pnpm run seed` | Seed database with 50 sample customers |
-| `pnpm run docker:up` | Start full Docker stack (all services) |
-| `pnpm run docker:down` | Stop full Docker stack |
-| `pnpm run docker:build` | Rebuild and start Docker stack |
-| `pnpm run install:all` | Install dependencies in both packages |
+| Script                    | Description                                                       |
+| ------------------------- | ----------------------------------------------------------------- |
+| `pnpm run dev`            | Start everything (infra + backend + frontend) with colored output |
+| `pnpm run dev:backend`    | Start backend only (watch mode)                                   |
+| `pnpm run dev:frontend`   | Start frontend only                                               |
+| `pnpm run infra`          | Start PostgreSQL + Redis containers (detached)                    |
+| `pnpm run infra:down`     | Stop all Docker containers                                        |
+| `pnpm run build`          | Build both backend and frontend                                   |
+| `pnpm run build:backend`  | Build backend only                                                |
+| `pnpm run build:frontend` | Build frontend only                                               |
+| `pnpm run lint`           | Lint both packages                                                |
+| `pnpm run lint:backend`   | Lint backend only                                                 |
+| `pnpm run lint:frontend`  | Lint frontend only                                                |
+| `pnpm run format`         | Format backend code (Prettier)                                    |
+| `pnpm run test`           | Run backend unit tests                                            |
+| `pnpm run test:watch`     | Run tests in watch mode                                           |
+| `pnpm run test:cov`       | Run tests with coverage report                                    |
+| `pnpm run seed`           | Seed database with 50 sample customers                            |
+| `pnpm run docker:up`      | Start full Docker stack (all services)                            |
+| `pnpm run docker:down`    | Stop full Docker stack                                            |
+| `pnpm run docker:build`   | Rebuild and start Docker stack                                    |
+| `pnpm run install:all`    | Install dependencies in both packages                             |
 
 Per-package scripts are documented in each package's README ([backend](./backend/README.md), [frontend](./frontend/README.md)).
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/customers` | List customers (paginated, searchable, sortable, filterable) |
-| GET | `/customers/:id` | Get a single customer by ID |
-| POST | `/customers` | Create a new customer |
-| PUT | `/customers/:id` | Update an existing customer |
-| DELETE | `/customers/:id` | Delete a single customer |
-| DELETE | `/customers` | Bulk delete customers (body: `{ ids: [...] }`) |
+| Method | Path             | Description                                                  |
+| ------ | ---------------- | ------------------------------------------------------------ |
+| GET    | `/customers`     | List customers (paginated, searchable, sortable, filterable) |
+| GET    | `/customers/:id` | Get a single customer by ID                                  |
+| POST   | `/customers`     | Create a new customer                                        |
+| PUT    | `/customers/:id` | Update an existing customer                                  |
+| DELETE | `/customers/:id` | Delete a single customer                                     |
+| DELETE | `/customers`     | Bulk delete customers (body: `{ ids: [...] }`)               |
 
 All endpoints accept an `x-internal: true` header for admin mode, which reveals sensitive fields (`national_id`, `internal_notes`).
 
@@ -136,16 +140,16 @@ Swagger docs available at [http://localhost:4000/api/docs](http://localhost:4000
 
 ### Customers
 
-| Column | Type | Constraints | Notes |
-|--------|------|-------------|-------|
-| `id` | UUID | PK, auto-generated | |
-| `full_name` | varchar(255) | NOT NULL, **indexed** | B-tree index for ORDER BY sorting |
-| `email` | varchar(255) | UNIQUE, NOT NULL | Unique constraint creates implicit index |
-| `phone_number` | varchar(50) | NOT NULL | |
-| `national_id` | varchar(100) | nullable | Sensitive |
-| `internal_notes` | text | nullable | Sensitive |
-| `created_at` | timestamp | auto-generated, **indexed** | B-tree index for ORDER BY and date range filtering |
-| `updated_at` | timestamp | auto-updated | |
+| Column           | Type         | Constraints                 | Notes                                              |
+| ---------------- | ------------ | --------------------------- | -------------------------------------------------- |
+| `id`             | UUID         | PK, auto-generated          |                                                    |
+| `full_name`      | varchar(255) | NOT NULL, **indexed**       | B-tree index for ORDER BY sorting                  |
+| `email`          | varchar(255) | UNIQUE, NOT NULL            | Unique constraint creates implicit index           |
+| `phone_number`   | varchar(50)  | NOT NULL                    |                                                    |
+| `national_id`    | varchar(100) | nullable                    | Sensitive                                          |
+| `internal_notes` | text         | nullable                    | Sensitive                                          |
+| `created_at`     | timestamp    | auto-generated, **indexed** | B-tree index for ORDER BY and date range filtering |
+| `updated_at`     | timestamp    | auto-updated                |                                                    |
 
 > **Note:** B-tree indexes on `full_name` and `created_at` optimize `ORDER BY` sorting and date range queries. For `%pattern%` ILIKE searches, B-tree doesn't help (would need `pg_trgm`) — a pragmatic trade-off at this scale.
 
@@ -191,51 +195,62 @@ The initial migration (`InitialSchema`) captures the full customers table with c
 
 ## WebSocket Events
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `customer.created` | `{ id, full_name, email }` | New customer created |
-| `customer.updated` | `{ id, full_name, email }` | Customer updated |
-| `customer.deleted` | `{ id }` | Customer deleted |
-| `customers.bulk_deleted` | `{ ids }` | Multiple customers deleted |
+| Event                    | Payload                    | Description                |
+| ------------------------ | -------------------------- | -------------------------- |
+| `customer.created`       | `{ id, full_name, email }` | New customer created       |
+| `customer.updated`       | `{ id, full_name, email }` | Customer updated           |
+| `customer.deleted`       | `{ id }`                   | Customer deleted           |
+| `customers.bulk_deleted` | `{ ids }`                  | Multiple customers deleted |
 
 Payloads are intentionally minimal — no sensitive fields, no full entity. Clients receive toast notifications and auto-refetch full data via TanStack Query invalidation.
 
 ## Architecture Trade-offs
 
-| Decision | Trade-off |
-|----------|-----------|
-| Version-based list cache invalidation | O(1) writes via `INCR`, but all list caches become stale at once (a single edit invalidates every page/sort/filter combination). Acceptable for dashboard scale; per-page invalidation would add complexity. |
-| 4-layer sensitive field defense | Redundant checks add minimal overhead but prevent accidental leaks at every layer — if one layer fails, others catch it |
-| `isInternal` in cache keys | Doubles cache entries for the same data, but prevents cross-mode data leaks |
-| Minimal socket payloads | Events emit only `{ id, full_name, email }` — no sensitive fields, no full entity. Clients must refetch for complete data, but this avoids accidental leakage over WebSocket |
-| Invalidation over optimistic updates | Mutations invalidate all queries on success rather than optimistically patching the cache. Simpler and always consistent, but users see a brief loading state after each mutation |
-| Server Component prefetch | Faster initial load (no spinner), but prefetched data is always public mode — admin toggle requires a client-side refetch |
-| `keepPreviousData` | Smoother UX during page/search/sort transitions, but briefly shows stale data |
-| ILIKE substring search | Simple `%query%` matching with wildcard escaping. B-tree indexes on `full_name`/`created_at` optimize sorting and date filtering, but don't accelerate `%pattern%` ILIKE — would need `pg_trgm` for larger datasets |
-| TypeORM migrations over `synchronize` | Production-safe schema management with version-controlled migrations. Slightly more workflow overhead, but prevents accidental schema changes and enables rollbacks |
-| Debounced search (300ms) | Reduces API calls during typing, but adds slight delay before results appear |
-| Redis graceful degradation | If Redis is down, queries fall through to the database with a warning log. No circuit breaker — every request attempts Redis first, adding latency when Redis is unavailable |
-| UUID primary keys | Prevents ID enumeration, but larger than auto-increment integers |
-| Single endpoint with `x-internal` header | Simpler routing than separate `/internal` endpoints, but requires consistent header handling across all callers |
-| `ValidationPipe` with `whitelist: true` | Unknown fields silently stripped from requests — provides defense-in-depth for sensitive fields but callers get no feedback about ignored fields |
+| Decision                                 | Trade-off                                                                                                                                                                                                           |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Version-based list cache invalidation    | O(1) writes via `INCR`, but all list caches become stale at once (a single edit invalidates every page/sort/filter combination). Acceptable for dashboard scale; per-page invalidation would add complexity.        |
+| 4-layer sensitive field defense          | Redundant checks add minimal overhead but prevent accidental leaks at every layer — if one layer fails, others catch it                                                                                             |
+| `isInternal` in cache keys               | Doubles cache entries for the same data, but prevents cross-mode data leaks                                                                                                                                         |
+| Minimal socket payloads                  | Events emit only `{ id, full_name, email }` — no sensitive fields, no full entity. Clients must refetch for complete data, but this avoids accidental leakage over WebSocket                                        |
+| Invalidation over optimistic updates     | Mutations invalidate all queries on success rather than optimistically patching the cache. Simpler and always consistent, but users see a brief loading state after each mutation                                   |
+| Server Component prefetch                | Faster initial load (no spinner), but prefetched data is always public mode — admin toggle requires a client-side refetch                                                                                           |
+| `keepPreviousData`                       | Smoother UX during page/search/sort transitions, but briefly shows stale data                                                                                                                                       |
+| ILIKE substring search                   | Simple `%query%` matching with wildcard escaping. B-tree indexes on `full_name`/`created_at` optimize sorting and date filtering, but don't accelerate `%pattern%` ILIKE — would need `pg_trgm` for larger datasets |
+| TypeORM migrations over `synchronize`    | Production-safe schema management with version-controlled migrations. Slightly more workflow overhead, but prevents accidental schema changes and enables rollbacks                                                 |
+| Debounced search (300ms)                 | Reduces API calls during typing, but adds slight delay before results appear                                                                                                                                        |
+| Redis graceful degradation               | If Redis is down, queries fall through to the database with a warning log. No circuit breaker — every request attempts Redis first, adding latency when Redis is unavailable                                        |
+| UUID primary keys                        | Prevents ID enumeration, but larger than auto-increment integers                                                                                                                                                    |
+| Single endpoint with `x-internal` header | Simpler routing than separate `/internal` endpoints, but requires consistent header handling across all callers                                                                                                     |
+| `ValidationPipe` with `whitelist: true`  | Unknown fields silently stripped from requests — provides defense-in-depth for sensitive fields but callers get no feedback about ignored fields                                                                    |
+
+## AI Tools
+
+This project was built with assistance from [Claude Code](https://claude.ai) (Anthropic's CLI agent). Claude Code was used for:
+
+- Scaffolding initial project structure and boilerplate
+- Generating unit tests and DTOs
+- Code review and refactoring suggestions
+- Documentation drafting
 
 ## Environment Variables
 
 ### Backend (`backend/.env`)
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `4000` | Server port |
-| `DB_HOST` | — | PostgreSQL host |
-| `DB_PORT` | `5432` | PostgreSQL port |
-| `DB_USERNAME` | — | PostgreSQL user |
-| `DB_PASSWORD` | — | PostgreSQL password |
-| `DB_NAME` | — | PostgreSQL database |
-| `REDIS_HOST` | `localhost` | Redis host |
-| `REDIS_PORT` | `6379` | Redis port |
-| `CORS_ORIGIN` | `*` | Allowed CORS origin |
-| `CACHE_TTL` | `60` | Redis cache TTL in seconds |
+
+| Variable      | Default     | Description                |
+| ------------- | ----------- | -------------------------- |
+| `PORT`        | `4000`      | Server port                |
+| `DB_HOST`     | —           | PostgreSQL host            |
+| `DB_PORT`     | `5432`      | PostgreSQL port            |
+| `DB_USERNAME` | —           | PostgreSQL user            |
+| `DB_PASSWORD` | —           | PostgreSQL password        |
+| `DB_NAME`     | —           | PostgreSQL database        |
+| `REDIS_HOST`  | `localhost` | Redis host                 |
+| `REDIS_PORT`  | `6379`      | Redis port                 |
+| `CORS_ORIGIN` | `*`         | Allowed CORS origin        |
+| `CACHE_TTL`   | `60`        | Redis cache TTL in seconds |
 
 ### Frontend (`frontend/.env.local`)
-| Variable | Default | Description |
-|----------|---------|-------------|
+
+| Variable              | Default                 | Description     |
+| --------------------- | ----------------------- | --------------- |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:4000` | Backend API URL |
