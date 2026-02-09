@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 
 @Entity('customers')
@@ -12,6 +13,7 @@ export class Customer {
   id: string;
 
   @Column({ type: 'varchar', length: 255 })
+  @Index()
   full_name: string;
 
   @Column({ type: 'varchar', length: 255, unique: true })
@@ -27,6 +29,7 @@ export class Customer {
   internal_notes: string | null;
 
   @CreateDateColumn()
+  @Index()
   created_at: Date;
 
   @UpdateDateColumn()
