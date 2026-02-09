@@ -2,8 +2,6 @@
 
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AdminToggle } from "@/components/AdminToggle";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface CustomerPageHeaderProps {
   onAddCustomer: () => void;
@@ -14,15 +12,16 @@ export function CustomerPageHeader({
 }: CustomerPageHeaderProps) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <h1 className="text-2xl font-bold">Customers</h1>
-      <div className="flex items-center gap-3">
-        <ThemeToggle />
-        <AdminToggle />
-        <Button onClick={onAddCustomer}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Customer
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
+        <p className="text-sm text-muted-foreground">
+          Manage your customer records
+        </p>
       </div>
+      <Button onClick={onAddCustomer}>
+        <Plus className="mr-2 h-4 w-4" />
+        Add Customer
+      </Button>
     </div>
   );
 }

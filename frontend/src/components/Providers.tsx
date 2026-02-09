@@ -8,7 +8,7 @@ import { makeQueryClient } from '@/lib/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AdminProvider } from '@/context/AdminContext';
 import { SocketProvider } from '@/context/SocketContext';
-import { ConnectionStatus } from '@/components/ConnectionStatus';
+import { AppLayout } from '@/components/AppLayout';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => makeQueryClient());
@@ -19,8 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <TooltipProvider>
           <AdminProvider>
             <SocketProvider>
-              {children}
-              <ConnectionStatus />
+              <AppLayout>{children}</AppLayout>
               <Toaster richColors position="top-right" />
             </SocketProvider>
           </AdminProvider>

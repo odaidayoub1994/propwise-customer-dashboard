@@ -9,12 +9,23 @@ const subscribe = () => () => {};
 const getSnapshot = () => true;
 const getServerSnapshot = () => false;
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  variant?: 'default' | 'sidebar';
+}
+
+export function ThemeToggle({ variant = 'default' }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
-  // useSyncExternalStore returns false on server, true on client — avoids hydration mismatch without useEffect
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   if (!mounted) {
+    if (variant === 'sidebar') {
+      return (
+        <div className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/50">
+          <Sun className="h-4 w-4" />
+          Light Mode
+        </div>
+      );
+    }
     return (
       <Button variant="outline" size="icon" disabled>
         <Sun className="h-4 w-4" />
@@ -23,6 +34,20 @@ export function ThemeToggle() {
   }
 
   const isDark = theme === 'dark';
+
+  if (variant === 'sidebar') {
+    return (
+      <button
+        type="button"
+        onClick={() => setTheme(isDark ? 'light' : 'dark')}
+        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      >
+        {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        {isDark ? 'Light Mode' : 'Dark Mode'}
+      </button>
+    );
+  }
 
   return (
     <Button
