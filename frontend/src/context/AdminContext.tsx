@@ -37,6 +37,7 @@ function setStoredValue(value: boolean) {
 const AdminContext = createContext<AdminContextValue | null>(null);
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
+  // useSyncExternalStore gives sync access to localStorage without useState+useEffect hydration mismatch
   const isInternal = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const toggle = useCallback(() => {

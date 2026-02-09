@@ -11,6 +11,7 @@ const getServerSnapshot = () => false;
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  // useSyncExternalStore returns false on server, true on client — avoids hydration mismatch without useEffect
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   if (!mounted) {
