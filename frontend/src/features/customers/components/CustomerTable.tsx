@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { useSelection } from "@/hooks/useSelection";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
@@ -84,26 +85,11 @@ export function CustomerTable() {
   const meta = data?.meta;
   const colSpan = isInternal ? 8 : 6;
 
-  // Selection helpers
-  const allSelected =
-    customers.length > 0 && customers.every((c) => selectedIds.has(c.id));
-
-  const toggleOne = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const toggleAll = useCallback(() => {
-    setSelectedIds((prev) => {
-      const allCurrentlySelected = customers.every((c) => prev.has(c.id));
-      if (allCurrentlySelected) return new Set();
-      return new Set(customers.map((c) => c.id));
-    });
-  }, [customers]);
+  const { allSelected, toggleOne, toggleAll } = useSelection(
+    customers,
+    selectedIds,
+    setSelectedIds,
+  );
 
   // Modal handlers
   const openCreateModal = useCallback(() => {
