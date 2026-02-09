@@ -21,7 +21,7 @@ export function DateRangeFilter({
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="date-from" className="text-xs text-muted-foreground">
+        <Label htmlFor="date-from" className="text-xs font-medium text-muted-foreground">
           From
         </Label>
         <Input
@@ -30,11 +30,11 @@ export function DateRangeFilter({
           value={dateFrom}
           onChange={(e) => onDateChange("from", e.target.value)}
           max={dateTo || undefined}
-          className="w-full sm:w-40"
+          className="h-10 w-full rounded-lg bg-card shadow-sm sm:w-44"
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="date-to" className="text-xs text-muted-foreground">
+        <Label htmlFor="date-to" className="text-xs font-medium text-muted-foreground">
           To
         </Label>
         <Input
@@ -43,7 +43,7 @@ export function DateRangeFilter({
           value={dateTo}
           onChange={(e) => onDateChange("to", e.target.value)}
           min={dateFrom || undefined}
-          className="w-full sm:w-40"
+          className="h-10 w-full rounded-lg bg-card shadow-sm sm:w-44"
         />
       </div>
       {(dateFrom || dateTo) && (
@@ -51,7 +51,7 @@ export function DateRangeFilter({
           variant="ghost"
           size="sm"
           onClick={onClear}
-          className="text-muted-foreground"
+          className="text-muted-foreground hover:text-foreground"
         >
           <X className="mr-1 h-3 w-3" />
           Clear dates

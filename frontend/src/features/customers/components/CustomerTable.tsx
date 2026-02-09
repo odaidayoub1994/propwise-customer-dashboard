@@ -29,6 +29,7 @@ import { DateRangeFilter } from "@/features/customers/components/DateRangeFilter
 import { BulkActionBar } from "@/features/customers/components/BulkActionBar";
 import { CustomerRow } from "@/features/customers/components/CustomerRow";
 import { CustomerTableEmpty } from "@/features/customers/components/CustomerTableEmpty";
+import { StatsCards } from "@/features/customers/components/StatsCards";
 import type { Customer, SortColumn } from "@/features/customers/types";
 
 export function CustomerTable() {
@@ -156,15 +157,21 @@ export function CustomerTable() {
   const showRows = !isLoading && !isError && customers.length > 0;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4 p-4 sm:p-6">
+    <div className="mx-auto max-w-7xl space-y-6 p-6 sm:p-8">
       <CustomerPageHeader onAddCustomer={openCreateModal} />
-      <SearchBar value={search} onChange={handleSearchChange} hint={searchHint} />
-      <DateRangeFilter
-        dateFrom={dateFrom}
-        dateTo={dateTo}
-        onDateChange={handleDateChange}
-        onClear={clearDateFilters}
-      />
+      <StatsCards total={meta?.total} />
+
+      {/* Filters */}
+      <div className="space-y-3">
+        <SearchBar value={search} onChange={handleSearchChange} hint={searchHint} />
+        <DateRangeFilter
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onDateChange={handleDateChange}
+          onClear={clearDateFilters}
+        />
+      </div>
+
       <BulkActionBar
         selectedCount={selectedIds.size}
         onDelete={() => openDeleteModal(Array.from(selectedIds))}
