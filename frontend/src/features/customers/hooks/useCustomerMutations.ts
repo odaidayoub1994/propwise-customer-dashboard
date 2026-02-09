@@ -2,8 +2,8 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { AxiosError } from 'axios';
 import { useAdminMode } from '@/context/AdminContext';
+import { getErrorMessage } from '@/lib/error';
 import {
   createCustomer,
   updateCustomer,
@@ -12,15 +12,6 @@ import {
 } from '@/features/customers/api';
 import { customerKeys } from '@/features/customers/keys';
 import type { Customer } from '@/features/customers/types';
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof AxiosError) {
-    const msg = error.response?.data?.message;
-    if (typeof msg === 'string') return msg;
-    if (Array.isArray(msg)) return msg[0];
-  }
-  return 'Something went wrong';
-}
 
 export function useCreateCustomer() {
   const queryClient = useQueryClient();
