@@ -82,19 +82,19 @@ export const CustomerRow = memo(function CustomerRow({
           <span className="font-medium">{customer.full_name}</span>
         </div>
       </TableCell>
-      <TableCell className="min-w-0 text-muted-foreground">
-        {customer.email}
+      <TableCell className="min-w-0 max-w-[200px] text-muted-foreground">
+        <span className="block truncate">{customer.email}</span>
       </TableCell>
-      <TableCell className="hidden text-muted-foreground md:table-cell">
+      <TableCell className="text-muted-foreground">
         {customer.phone_number}
       </TableCell>
       {isInternal && (
-        <TableCell className="hidden text-muted-foreground md:table-cell">
+        <TableCell className="text-muted-foreground">
           {customer.national_id ?? "—"}
         </TableCell>
       )}
       {isInternal && (
-        <TableCell className="hidden max-w-xs text-muted-foreground md:table-cell">
+        <TableCell className="max-w-xs text-muted-foreground">
           {customer.internal_notes ? (
             <Tooltip>
               <TooltipTrigger asChild>

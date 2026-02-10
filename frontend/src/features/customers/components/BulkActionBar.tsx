@@ -17,7 +17,7 @@ export function BulkActionBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
       <CheckSquare className="h-4 w-4 text-primary" />
       <span className="text-sm font-medium">
         {selectedCount} customer{selectedCount !== 1 ? "s" : ""} selected

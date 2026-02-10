@@ -36,13 +36,13 @@ export function Pagination({ page, totalPages, total, limit, onPageChange }: Pag
   const rangeEnd = total && limit ? Math.min(page * limit, total) : undefined;
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-center text-sm text-muted-foreground sm:text-left">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <p className="text-sm text-muted-foreground">
         {rangeStart !== undefined && rangeEnd !== undefined && total !== undefined
           ? `Showing ${rangeStart}\u2013${rangeEnd} of ${total}`
           : `Page ${page} of ${totalPages}`}
       </p>
-      <div className="flex items-center justify-center gap-1">
+      <div className="flex flex-wrap items-center justify-center gap-1">
         <Button
           variant="ghost"
           size="icon-sm"

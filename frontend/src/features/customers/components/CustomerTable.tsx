@@ -157,7 +157,7 @@ export function CustomerTable() {
   const showRows = !isLoading && !isError && customers.length > 0;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6 sm:p-8">
+    <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
       <CustomerPageHeader onAddCustomer={openCreateModal} />
       <StatsCards total={meta?.total} />
 
@@ -189,7 +189,7 @@ export function CustomerTable() {
             onPageChange={handlePageChange}
           />
         )}
-        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -213,16 +213,12 @@ export function CustomerTable() {
                 </button>
               </TableHead>
               <TableHead>Email</TableHead>
-              <TableHead className="hidden md:table-cell">Phone</TableHead>
+              <TableHead>Phone</TableHead>
               {isInternal && (
-                <TableHead className="hidden md:table-cell">
-                  National ID
-                </TableHead>
+                <TableHead>National ID</TableHead>
               )}
               {isInternal && (
-                <TableHead className="hidden md:table-cell">
-                  Internal Notes
-                </TableHead>
+                <TableHead>Internal Notes</TableHead>
               )}
               <TableHead>
                 <button
