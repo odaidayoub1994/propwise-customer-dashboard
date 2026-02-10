@@ -64,7 +64,7 @@ pnpm run dev
 
 Backend at http://localhost:4000, Frontend at http://localhost:3000.
 
-Seed the database (requires infra running):
+Seed the database (requires infra + migrations):
 
 ```bash
 pnpm run seed
@@ -75,7 +75,7 @@ pnpm run seed
 ```bash
 docker compose up -d postgres redis   # Start infra
 
-cd backend && pnpm install && pnpm run seed && pnpm run start:dev
+cd backend && pnpm install && pnpm run migration:run && pnpm run seed && pnpm run start:dev
 cd frontend && pnpm install && pnpm run dev
 ```
 
