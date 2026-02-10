@@ -64,13 +64,15 @@ export const CustomerRow = memo(function CustomerRow({
       className={`transition-colors duration-150${rowBg}`}
     >
       <TableCell>
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={() => onToggleSelect(customer.id)}
-          aria-label={`Select ${customer.full_name}`}
-        />
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(customer.id)}
+            aria-label={`Select ${customer.full_name}`}
+          />
+        </div>
       </TableCell>
-      <TableCell className="min-w-0">
+      <TableCell className="min-w-0 text-left">
         <div className="flex items-center gap-3">
           <div
             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${getAvatarColor(customer.full_name)}`}
@@ -113,7 +115,7 @@ export const CustomerRow = memo(function CustomerRow({
         {formatDate(customer.created_at)}
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

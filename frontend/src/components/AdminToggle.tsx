@@ -16,7 +16,7 @@ export function AdminToggle({ variant = 'default' }: AdminToggleProps) {
       <button
         type="button"
         onClick={toggle}
-        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+        className={`flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
           isInternal
             ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
             : 'text-muted-foreground hover:bg-muted hover:text-foreground'

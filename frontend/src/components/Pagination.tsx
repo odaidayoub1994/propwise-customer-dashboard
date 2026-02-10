@@ -49,6 +49,7 @@ export function Pagination({ page, totalPages, total, limit, onPageChange }: Pag
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           aria-label="Previous page"
+          className="cursor-pointer hover:shadow-sm"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -65,6 +66,7 @@ export function Pagination({ page, totalPages, total, limit, onPageChange }: Pag
               onClick={() => onPageChange(p)}
               aria-label={`Page ${p}`}
               aria-current={p === page ? 'page' : undefined}
+              className="cursor-pointer hover:shadow-sm"
             >
               {p}
             </Button>
@@ -76,6 +78,7 @@ export function Pagination({ page, totalPages, total, limit, onPageChange }: Pag
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
           aria-label="Next page"
+          className="cursor-pointer hover:shadow-sm"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>

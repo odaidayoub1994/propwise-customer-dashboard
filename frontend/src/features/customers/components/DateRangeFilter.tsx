@@ -33,7 +33,7 @@ export function DateRangeFilter({
             value={dateFrom}
             onChange={(e) => onDateChange("from", e.target.value)}
             max={dateTo || undefined}
-            className="h-10 w-full rounded-lg bg-card pl-9 shadow-sm sm:w-44"
+            className="h-10 w-full cursor-pointer rounded-lg bg-card pl-9 shadow-sm sm:w-44"
           />
         </div>
       </div>
@@ -50,7 +50,7 @@ export function DateRangeFilter({
             value={dateTo}
             onChange={(e) => onDateChange("to", e.target.value)}
             min={dateFrom || undefined}
-            className="h-10 w-full rounded-lg bg-card pl-9 shadow-sm sm:w-44"
+            className="h-10 w-full cursor-pointer rounded-lg bg-card pl-9 shadow-sm sm:w-44"
           />
         </div>
       </div>

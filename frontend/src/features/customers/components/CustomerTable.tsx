@@ -178,17 +178,29 @@ export function CustomerTable() {
         isPending={bulkDeleteMutation.isPending}
       />
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+      {/* Pagination + Table */}
+      <div className="space-y-2">
+        {meta && (
+          <Pagination
+            page={meta.page}
+            totalPages={meta.totalPages}
+            total={meta.total}
+            limit={meta.limit}
+            onPageChange={handlePageChange}
+          />
+        )}
+        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead>
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={toggleAll}
-                  aria-label="Select all customers"
-                />
+                <div className="flex items-center justify-center">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={toggleAll}
+                    aria-label="Select all customers"
+                  />
+                </div>
               </TableHead>
               <TableHead>
                 <button
@@ -251,17 +263,8 @@ export function CustomerTable() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
-
-      {meta && (
-        <Pagination
-          page={meta.page}
-          totalPages={meta.totalPages}
-          total={meta.total}
-          limit={meta.limit}
-          onPageChange={handlePageChange}
-        />
-      )}
 
       <CustomerFormModal
         open={isFormOpen}
