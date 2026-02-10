@@ -48,6 +48,22 @@ function CustomerForm({
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
+  const isValid =
+    fullName.trim().length > 0 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+    phoneNumber.trim().length > 0;
+
+  const hasChanges = isEditing
+    ? fullName !== (customer?.full_name ?? '') ||
+      email !== (customer?.email ?? '') ||
+      phoneNumber !== (customer?.phone_number ?? '') ||
+      (isInternal &&
+        (nationalId !== (customer?.national_id ?? '') ||
+          internalNotes !== (customer?.internal_notes ?? '')))
+    : true;
+
+  const canSubmit = isValid && hasChanges && !isPending;
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -135,7 +151,7 @@ function CustomerForm({
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={!canSubmit}>
           {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isPending ? 'Saving...' : isEditing ? 'Update' : 'Create'}
         </Button>
