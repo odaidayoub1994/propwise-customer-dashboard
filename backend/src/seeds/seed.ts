@@ -1,13 +1,5 @@
-import 'dotenv/config';
-import { DataSource } from 'typeorm';
-import { Customer } from './src/customers/entities/customer.entity';
-import {
-  DB_HOST,
-  DB_PORT,
-  DB_USERNAME,
-  DB_PASSWORD,
-  DB_NAME,
-} from './src/config/env.config';
+import dataSource from '../config/data-source';
+import { Customer } from '../customers/entities/customer.entity';
 
 const firstNames = [
   'Ahmad',
@@ -136,18 +128,6 @@ function buildCustomers(count: number): Partial<Customer>[] {
 
 async function seed() {
   console.log('Connecting to database...');
-
-  const dataSource = new DataSource({
-    type: 'postgres',
-    host: DB_HOST,
-    port: DB_PORT,
-    username: DB_USERNAME,
-    password: DB_PASSWORD,
-    database: DB_NAME,
-    entities: [Customer],
-    synchronize: true,
-  });
-
   await dataSource.initialize();
 
   const count = 50;

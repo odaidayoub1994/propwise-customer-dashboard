@@ -202,7 +202,7 @@ Testing pattern: `@nestjs/testing` `Test.createTestingModule()` with all externa
 | `pnpm run test:watch` | Tests in watch mode |
 | `pnpm run test:cov` | Tests with coverage report |
 | `pnpm run test:e2e` | End-to-end tests |
-| `pnpm run seed` | Seed database with 50 sample customers |
+| `pnpm run seed` | Seed database with 50 sample customers (run migrations first) |
 | `pnpm run migration:generate` | Generate a migration from entity changes |
 | `pnpm run migration:run` | Run pending migrations |
 | `pnpm run migration:revert` | Revert the last migration |
