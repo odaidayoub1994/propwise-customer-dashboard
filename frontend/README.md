@@ -19,10 +19,14 @@ See the [root README](../README.md) for full project setup and architecture over
 
 ## Features
 
+- Sidebar layout with navigation, admin toggle, theme switch, and connection status
 - Customer data table with column sorting (name, date), pagination, and configurable page size
+- Stats cards showing customer metrics at a glance
+- Polished table UI with zebra rows, inline row actions, and column separators
+- Responsive layout with horizontal scroll to always display all columns
 - Full-text search across name and email (minimum 3 characters, debounced, auto-trimmed)
 - Date range filtering with from/to date pickers and auto-fill
-- Create and edit customers via modal form with validation
+- Create and edit customers via polished modal forms with validation
 - Single and bulk delete with confirmation dialog
 - Admin mode toggle — reveals sensitive fields (`national_id`, `internal_notes`) via `x-internal` header
 - Dark/light/system theme toggle (persisted via next-themes)
@@ -56,6 +60,7 @@ src/
 │   │   ├── SearchBar.tsx              Search input with debounce
 │   │   ├── DateRangeFilter.tsx        Date range from/to pickers
 │   │   ├── BulkActionBar.tsx          Bulk delete action bar
+│   │   ├── StatsCards.tsx             Customer stats cards (total, filtered)
 │   │   └── ToastNotifications.tsx     Socket-driven toast notification listener
 │   └── hooks/                         Thin wrappers around shared hooks
 │       ├── useCustomers.ts            Wraps usePaginatedQuery for customer list
@@ -63,12 +68,14 @@ src/
 │       ├── useCustomerFilters.ts      Wraps useTableFilters with customer defaults
 │       └── useSocket.ts              Wraps useEntitySocket with customer events
 ├── components/
+│   ├── AppLayout.tsx                  Sidebar layout wrapper
+│   ├── AppSidebar.tsx                 Sidebar with nav, admin toggle, theme toggle, connection status
 │   ├── AdminToggle.tsx                Admin mode switch (public/internal)
 │   ├── ConnectionStatus.tsx           WebSocket connection status badge
 │   ├── Pagination.tsx                 Reusable pagination controls
 │   ├── ThemeToggle.tsx                Dark/light/system theme switch
 │   ├── Providers.tsx                  Provider composition wrapper
-│   └── ui/                            shadcn/ui primitives (button, dialog, input, table, etc.)
+│   └── ui/                            shadcn/ui primitives (button, dialog, input, table, sheet, etc.)
 ├── context/
 │   ├── AdminContext.tsx               Admin mode state (localStorage + useSyncExternalStore)
 │   └── SocketContext.tsx              Singleton Socket.IO client instance

@@ -35,9 +35,9 @@ propwise-customer-dashboard/
 ├── frontend/src/
 │   ├── app/                 Next.js App Router (layout, page, loading, error)
 │   ├── features/customers/
-│   │   ├── components/      CustomerTable, Row, FormModal, DeleteModal, SearchBar, Toasts
+│   │   ├── components/      CustomerTable, Row, FormModal, DeleteModal, SearchBar, StatsCards, Toasts
 │   │   └── hooks/           useCustomers, useCustomerMutations, useCustomerFilters, useSocket
-│   ├── components/          AdminToggle, Pagination, ThemeToggle, ConnectionStatus, ui/
+│   ├── components/          AppLayout, AppSidebar, AdminToggle, Pagination, ThemeToggle, ConnectionStatus, ui/
 │   ├── context/             AdminContext, SocketContext
 │   ├── hooks/               useDebouncedValue, useSelection, useTableFilters, usePaginatedQuery, useEntitySocket
 │   ├── lib/                 Axios fetcher, QueryClient factory, error helpers, query key factory
