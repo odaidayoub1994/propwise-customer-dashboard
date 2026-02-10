@@ -115,7 +115,7 @@ Both Dockerfiles use multi-stage builds with `dev` and `production` targets. Pro
 | `pnpm run test:frontend`  | Run frontend tests only (Vitest, 37 tests)                        |
 | `pnpm run test:watch`     | Run backend tests in watch mode                                   |
 | `pnpm run test:cov`       | Run tests with coverage report (both packages)                    |
-| `pnpm run seed`           | Seed database with 50 sample customers                            |
+| `pnpm run seed`           | Seed database with 50 sample customers (run migrations first)     |
 | `pnpm run docker:up`      | Start full Docker stack (all services)                            |
 | `pnpm run docker:down`    | Stop full Docker stack                                            |
 | `pnpm run docker:build`   | Rebuild and start Docker stack                                    |
